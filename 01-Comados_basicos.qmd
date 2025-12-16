@@ -1,0 +1,1066 @@
+---
+format: html
+editor: visual
+---
+
+# Bienvenidos
+
+Esto es un notebook. Podemos escribir en lenguaje Markdown, el cual nos permite:
+
+-   Listas
+-   Escribir en **negrita** y *cursiva*
+-   Más información aquí: [Markdown-Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+
+### PREGUNTAD!!
+
+Sobretodo si os perdeis, no lleguemos a casos donde no sepais que estamos haciendo.
+
+![Imagen no cargada. Edita y borra la](https://images-cdn.9gag.com/photo/aQegdy7_700b.jpg)
+
+# Introducción
+
+![](diagrama_resumen.png)
+
+# Bibliografía
+
+Sobre **estadística**: [Practical Statistics for Data Scientists: 50 Essential Concepts](https://www.amazon.com/Practical-Statistics-Data-Scientists-Essential/dp/1491952962/ref=sr_1_3?ie=UTF8&qid=1518719786)
+
+Sobre **R**: [R for Data Science: Import, Tidy, Transform, Visualize, and Model Data](https://www.amazon.com/Data-Science-Transform-Visualize-Model/dp/1491910399/ref=sr_1_1?ie=UTF8&qid=1518791084) Este libro es bastante completo, abarca mucho temario que no veremos por falta de tiempo.
+
+Aplicaciones movil Android/iPhone: https://artofstat.com/art-of-stat-inference
+
+## Estadística vs Machine Learning
+
+Más información aquí: [Markdown-Cheatsheet](https://www.reddit.com/r/MachineLearningLounge/comments/9soaw4/let_me_fix_that_for_you/)
+
+-   Estadística: Trata de entender las variables y su relación entre ellas. Las estadísitcas te ayudan a entender como es tu población de datos.
+
+-   Machine Learning: Trata de hacer predicciones, crear modelos que, a partir de una población limitada puedan **generalizar** y aprender como se comportarán los datos.
+
+# Introducción a R
+
+R es un lenguaje de programación orientado a la estadística.
+
+Algo parecido a SPSS o Matlab.
+
+Es código abierto y se entrega bajo licencia GPL (versión 2 o posterior). Además existen multitud de paquetes que complementan su funcionalidad.
+
+## Asignaciones
+
+Podemos usar \<- o el símbolo = para asignar un valor a una variable
+
+## Operaciones
+
+```{r}
+### Operaciones matemáticas
+
+a <- 9
+3 -> b
+
+```
+
+```{r}
+b+a #Suma
+b*a #Multiplicación
+b-a #Resta
+b/a #División: 
+a%/%b #División entera: 
+a %% b #Módulo: 
+a^b #Potencia: 
+```
+
+### Otro tipo de operador
+
+```{r}
+3:10        #Secuencias
+6 %in% 3:10 #contiene
+```
+
+## Funciones básicas
+
+Las funciones
+
+-   siempre acaban en ()
+-   pueden recibir un número variable de parámetros
+-   pueden existir parámetros por defecto
+
+Ver las variables en memoria, función ls()
+
+Ver el tipo de variable, función typeof(x):
+
+Para concatenar textos usamos paste(a, b, c, ...)
+
+```{r}
+paste("El valor de a es:",a,"y el de b es:",b)
+```
+
+# Tipos de datos
+
+## double
+
+```{r}
+typeof(exp(3))
+```
+
+## integer
+
+Para pasar un double a integer:
+
+```{r}
+ai <- as.integer(a)
+typeof(ai)
+```
+
+## Diferencias entre integer y double
+
+El número más grande que podemos representar es diferente:
+
+```{r}
+.Machine$integer.max
+.Machine$double.xmax
+```
+
+El tamaño que ocupan en memoria es:
+
+```{r}
+object.size(ai)
+object.size(b)
+```
+
+## character
+
+Las cadenas de texto se pueden concatenar usando la función paste(x,y,z...)
+
+```{r}
+?paste
+```
+
+```{r}
+cat("El valor de a es:",a,"y el de b es:",b, sep=' ')
+```
+
+## Logical
+
+```{r}
+b1 <- TRUE
+b2 <- T
+b3 <- FALSE
+paste("El valor de b1 es",b1)
+paste("El valor de b2 es",b2)
+paste("El valor de b3 es",b3)
+```
+
+Operaciones lógicas:
+
+| A   | B   | AND | OR  | XOR | NOT(A) |
+|-----|-----|-----|-----|-----|--------|
+| 0   | 0   | 0   | 0   | 0   | 1      |
+| 0   | 1   | 0   | 1   | 1   | 1      |
+| 1   | 0   | 0   | 1   | 1   | 0      |
+| 1   | 1   | 1   | 1   | 0   | 0      |
+
+```{r}
+print(paste("b1 AND b3:",b1 & b3))
+print(paste("b1 OR  b3:",b1 | b3))
+print(paste("b1 XOR b3:",xor(b1 ,b3)))
+print(paste("   NOT b1:",!b1))
+```
+
+## Vectores
+
+Los vectores se crean con la función c(), todos los elementos de un vector son del mimo tipo. Es decir, no se podrían mezclar caracteres y double.
+
+En python:
+
+a = \[1,2,3,40\]
+
+En R:
+
+a = c(1,2,3,40)
+
+```{r}
+alturas<-c(1.80,1.60,1.50,1.90,1.75,1.63,1.65)
+print(paste("alturas es una variable de tipo:",typeof(alturas)))
+```
+
+```{r}
+print("Podemos ver la estructura de un objeto con la función str():")
+str(alturas)
+```
+
+```{r}
+otroVector <- c("uno",2.01,"tres","14.0")
+otroVector
+```
+
+```{r}
+str(otroVector)
+```
+
+### Acceso a elementos
+
+```{r}
+print(paste("El valor del tercer elemento es:",alturas[3]))
+```
+
+**¡¡En R los arrays empiezan en 1!!** ![Imagen no cargada. Edita y borra la \@](https://images-cdn.9gag.com/photo/aQegdy7_700b.jpg)
+
+Podemos dar nombres a cada elemento
+
+```{r}
+myVector <- c(nombre="Philip",apellido="García",teléfono=600100100)
+```
+
+```{r}
+myVector
+```
+
+```{r}
+myVector["nombre"]
+```
+
+```{r}
+myVector[2]
+```
+
+```{r}
+myVector["teléfono"]
+```
+
+```{r}
+#Los nombres de una variable se pueden ver con la función names()
+names(myVector)
+```
+
+```{r}
+names(myVector) <- c("nombre_actualizado","apellido_actualizado", "telefono_actualizado")
+```
+
+```{r}
+myVector
+```
+
+### Operaciones con vectores
+
+Al operar contra una variable se aplica esa operación a todos los elementos del vector
+
+```{r}
+metro2pie <- 3.28084
+alturasEnPies <- alturas*metro2pie
+alturasEnPies
+```
+
+Si se opera con dos vectores de la misma longitud se aplica elemento a elemento.
+
+```{r}
+alturas
+```
+
+```{r}
+alturaDeLosZapatos<-c(2,0,1,3,5,7,0)/100
+alturaReal<-alturas-alturaDeLosZapatos
+alturaReal
+```
+
+Se puede operar con vectores de tamaños diferentes, en este caso el vector más pequeño se replica
+
+```{r}
+alturas*c(1,0)
+```
+
+Concatenar vectores
+
+```{r}
+alturas_largo <- c(alturas, 2,1.8,17)
+```
+
+Longitud de un vector se obtiene con la función length()
+
+```{r}
+length(alturas)
+```
+
+La estructura de la variable se puede ver con la función str()
+
+```{r}
+str(alturas)
+```
+
+```{r}
+alturas[18]<-1.9
+```
+
+```{r}
+alturas
+```
+
+## Listas
+
+Las listas se pueden considerar como vectores que pueden almacenar cualquier tipo de dato.
+
+```{r}
+mv <- c(1,3,"catorce","panama")
+str(mv)
+```
+
+```{r}
+myList<-list(1,3,"catorce","panama")
+str(myList)
+```
+
+```{r}
+myList
+```
+
+Podemos asignar un nombre a cada valor
+
+```{r}
+datosPersonales<-list(nombre="Philip",
+                   apellido="García",
+                   teléfono=600100100)
+datosPersonales
+```
+
+### Acceso a elementos
+
+Podemos acceder a los distintos elementos utilizando su índice o nombre:
+
+```{r}
+datosPersonales[[1]]
+```
+
+```{r}
+datosPersonales[["nombre"]]
+```
+
+```{r}
+datosPersonales$nombre
+```
+
+```{r}
+is.null(datosPersonales[["direccion"]])
+```
+
+```{r}
+names(datosPersonales)
+```
+
+```{r}
+datosPersonales[["direccion"]]<-list(ciudad="Madrid",calle="Desengaño",numero=21)
+datosPersonales[["direccion"]]
+```
+
+```{r}
+datosPersonales
+```
+
+```{r}
+datosPersonales[["direccion"]]$calle
+```
+
+```{r}
+cat(paste("La longitud total de la lista es",length(datosPersonales)))
+```
+
+## Factores
+
+En estadística tenemos fundamentalmente dos tipos de variables:
+
+-   **Numéricas:** Estos datos tienen significado como medidas, por ejemplo la altura, peso, presión sanguinea, número de mascotas.
+-   **Categóricas:** Estos representan una característica, por ejemplo el género, color, sabores, ciudad.
+
+Los factores son útiles cuando trabajamos con **variables categóricas**. Ej: Población de origen, colores, sabores
+
+```{r}
+saboresDePlatos<-c("Dulce","Salado","Ácido","Amargo","Umami","Dulce","Salado","Ácido","Umami","Umami","Salado")
+saboresDePlatosFactor<-factor(saboresDePlatos)
+
+summary(saboresDePlatos)
+summary(saboresDePlatosFactor)
+```
+
+```{r}
+str(saboresDePlatos)
+```
+
+```{r}
+str(saboresDePlatosFactor)
+```
+
+```{r}
+saboresDePlatosFactor
+```
+
+```{r}
+print("Los factores internamente se gestionan como enteros")
+as.numeric(saboresDePlatosFactor)
+```
+
+```{r}
+paste(levels(saboresDePlatosFactor), collapse = ',')
+```
+
+```{r}
+print(paste("Podemos ver los niveles con el comando levels:",
+            paste(levels(saboresDePlatosFactor),collapse=","), sep=' -> '))
+```
+
+```{r}
+factor(c(1,0,0,1,0,1),labels=c("NO","SI"))
+```
+
+```{r}
+camisas <- factor(c(10,5,5,0,5,0),labels=c("BAJO","MEDIO","ALTO"))
+camisas
+```
+
+# Matrices
+
+Podemos crear matrices con la función matrix. Como parámetros de entrada recibe un vector y el número de columnas (*ncol*) o filas (nrow). Un parámetro opcional (*byrow*) indica si la matriz se va a rellenar por filas o por columnas (valor por defecto)
+
+```{r}
+1:12
+```
+
+```{r}
+m1<-matrix(c(1:12),ncol=3)
+m1
+```
+
+```{r}
+?matrix
+```
+
+```{r}
+m2<-matrix(c(1:12),ncol=3,byrow=T)
+m2
+```
+
+La dimensión del array se puede ver con la función *dim()* o con *str()*
+
+```{r}
+dim(m1)
+```
+
+```{r}
+length(m1)
+```
+
+```{r}
+str(m2)
+```
+
+### Acceso
+
+El acceso se realiza igual que los vectores, pero aquí tenemos dos dimensiones.
+
+```{r}
+m1[1,3]
+```
+
+También podemos dar nombres a las filas y columnas para luego poder acceder utilizando el nombre
+
+```{r}
+?paste0
+```
+
+```{r}
+paste0("row",1:4)
+```
+
+```{r}
+colnames(m1)<-paste0("col",1:3)
+rownames(m1)<-paste0("row",1:4)
+m1
+```
+
+```{r}
+paste("El valor de 'row1' y 'col3' es:",m1["row1","col3"])
+```
+
+Las funciones *colnames* y *rownames*
+
+```{r}
+rownames(m1)
+```
+
+### Operaciones con matrices
+
+#### Álgebra lineal básica
+
+```{r}
+m1
+```
+
+Transpuesta
+
+```{r}
+t(m1)
+```
+
+Suma de constante
+
+```{r}
+m1+10
+```
+
+Suma de matrices
+
+```{r}
+m1+m2
+```
+
+Multiplicación de matrices
+
+```{r}
+m1 %*% matrix(rep(1,12),nrow=3) 
+```
+
+```{r}
+rep("a",5)
+```
+
+Submatrices
+
+```{r}
+m1[2:4,2:3]
+```
+
+```{r}
+m1[c(3,2,4),2:3]
+```
+
+# Tablas
+
+Se utilizan para estudios de frecuencia. Cuentan el número de veces que ha ocurrido algo.
+
+```{r}
+saboresDePlatos
+```
+
+```{r}
+tblSabores<-table(saboresDePlatos)
+tblSabores
+```
+
+```{r}
+names(tblSabores)
+```
+
+```{r}
+str(tblSabores)
+```
+
+Los atributos son una lista de propiedades asociadas a un objeto en R
+
+```{r}
+attributes(tblSabores)
+```
+
+```{r}
+class(tblSabores)
+```
+
+```{r}
+attributes(tblSabores)$dimnames$saboresDePlatos 
+```
+
+```{r}
+color  <- c("marrón","negro","blanco","negro","blanco","negro","negro","marrón","marrón","marrón")
+animal <- c("gato","gato","perro","gato","gato","perro","perro","perro","gato","gato")
+
+tbl_animal<-table(animal,color)
+tbl_animal
+```
+
+```{r}
+str(tbl_animal)
+```
+
+```{r}
+attributes(tbl_animal)$dimnames
+```
+
+```{r}
+attributes(tbl_animal)
+```
+
+## Miniresumen parcial
+
+Vector
+
+```{r}
+vecto_pesos <- c(5,7,8,9,10)
+vecto_pesos[c(1:3,5)]
+```
+
+Listas
+
+```{r}
+lista_medidas <- list(altura=1.5, ancho=1, peso = 3, unidades_peso="Kg", unidades_medida="m", 
+                      fabricacion=list(numeroserie="A1238656", origen="Zamora"))
+lista_medidas
+```
+
+```{r}
+lista_medidas[["altura"]]
+```
+
+## Data Frame
+
+Un Dataframe es una tabla como la que podemos encontrar en cualquier hoja de calculo.
+
+![](pics/ejemplo_dataframe.png)
+
+La información se estructura en columnas, cada columna puede ser de un tipo de variable diferente: categorica, numerica, fecha, etc..
+
+Cada fila representa un elemento u objeto cuyos atributos están representados por las columnas.
+
+En R se definen como un conjunto de vectores de la misma longitud. Cada vector puede ser de un tipo diferente.
+
+```{r}
+plt <- c("Bollo","Palomitas","Limón","Ginebra","Noodles","Caramelo","Patatas fritas","Naranja","Ternera","Cerdo","Sopa")
+cal <-c(150,200,10,20,200,5,500,15,450,460,30)
+```
+
+```{r}
+idx<- 5 
+paste("Elemento",idx,":",plt[idx],"-",cal[idx],"cal")
+```
+
+```{r}
+comidas<-data.frame(plato=plt, calorias=cal, sabor=saboresDePlatos)
+comidas
+str(comidas)
+```
+
+### Acceso a elementos de un data frame
+
+Acceso por filas:
+
+```{r}
+comidas[2:5,]
+```
+
+```{r}
+comidas[c(-1,-3,-10,-11), c("plato","calorias")  ]
+```
+
+Acceso por columnas:
+
+```{r}
+comidas[  , c("plato","calorias")]
+```
+
+Se puede usar el símbolo **\$** para acceder a una columna.\
+Las siguientes dos llamadas son equivalentes:
+
+```{r}
+comidas$plato
+```
+
+```{r}
+comidas[,"plato"]
+```
+
+```{r}
+comidas[,1]
+```
+
+```{r}
+comidas[,c(-1,-2)]
+```
+
+```{r}
+comidas$plato[2:3]
+```
+
+```{r}
+comidas[2:3,"plato"]
+```
+
+```{r}
+colnames(comidas)
+```
+
+Número de filas que tiene un dataframe:
+
+```{r}
+nrow(comidas)
+```
+
+También podemos dar nombres a las filas
+
+```{r}
+rownames(comidas)<-paste0("comida",1:nrow(comidas))
+comidas
+```
+
+```{r}
+comidas["comida5","calorias"]
+```
+
+```{r}
+comidas[5,"calorias"]
+```
+
+```{r}
+comidas[c(4,2), 
+        c(3,2,1)]
+```
+
+El nombre de las columnas y de las filas se puede obtener y modificar con las funciones **colnames()** y **rownames()**.
+
+```{r}
+colnames(comidas)
+rownames(comidas)
+```
+
+### Dataframe con variable categoricas
+
+```{r}
+comidas<-data.frame(plato=plt, calorias=cal, sabor=saboresDePlatos, stringsAsFactors = T)
+comidas
+str(comidas)
+```
+
+Para definir como categoria solo la columna sabores de Platos
+
+```{r}
+comidas<-data.frame(plato=plt, calorias=cal, sabor=saboresDePlatos)
+comidas$sabor <- factor(comidas$sabor)
+comidas
+str(comidas)
+```
+
+## Arrays 3D
+
+Se pueden crear arrays N-dimensionales con la función array
+
+```{r}
+arr<-array(1:12,dim = c(3,2,2))
+arr
+```
+
+El acceso a elementos es similar al de las matrices
+
+```{r}
+arr[1,2,1]
+```
+
+```{r}
+arr[1,,]
+```
+
+```{r}
+arr[2,,]
+```
+
+```{r}
+arr[3,,]
+```
+
+```{r}
+arr[4,,]
+```
+
+```{r}
+arr[,2,]
+```
+
+## Fechas
+
+Existen dos objetos para almacenar fechas en R.
+
+-   Posixct es recubrimiento sobre un timestamp en segundos.
+-   Posixlt es una lista de objetos que contiene la información de la fecha
+
+```{r}
+d1<-as.POSIXct("2018-10-5 15:40")
+d2<-as.POSIXct("5/10/2018 17:33",format="%m/%d/%Y")
+
+d1
+d2
+```
+
+```{r}
+str(d1)
+```
+
+```{r}
+class(d1)
+```
+
+```{r}
+unclass(d1)
+```
+
+```{r}
+d1+60*60*24
+```
+
+```{r}
+d3<-as.POSIXlt("2018-4-5")
+d3
+```
+
+```{r}
+d3
+```
+
+```{r}
+d3$mday<-6
+```
+
+```{r}
+d3
+```
+
+```{r}
+str(d3)
+```
+
+```{r}
+c(as.POSIXct("2018-01-01"),as.POSIXct("2018-01-02"),as.POSIXct("2018-01-03"))
+```
+
+```{r}
+df<-data.frame(fecha=c(as.POSIXlt("2018-01-01"),as.POSIXlt("2018-01-02"),as.POSIXlt("2018-01-03")))
+str(df)
+```
+
+## Valores infinitos y NaN (Not a Number)
+
+Inf y -Inf son negativo positivo y negativo, mientras que NaN significa "Not a Number"
+
+```{r}
+#x<-10
+#x<-1/0
+x<-0/0
+#x<-NA
+paste("El valor de x es",x)
+
+is.finite(x)
+is.infinite(x)
+is.nan(x)
+is.na(x)
+```
+
+```{r}
+#Valores NaN
+is.nan(NaN)
+is.nan(0/0)
+is.nan(Inf-Inf)
+```
+
+La comprobación de si un número es NaN se tiene que realizar con la funcion is.nan()
+
+```{r}
+x<-NaN
+x==NaN
+is.nan(x)
+```
+
+## Valores NULL
+
+Simplemente son valores que no existen. Es un concepto similar a otros lenguajes como Java o C.
+
+```{r}
+# Los valores NULL simplemente se ignoran
+c(1,2,NA,NULL,3,NULL,3,NULL)
+```
+
+```{r}
+x<-NULL
+x
+is.null(x)
+```
+
+```{r}
+df<-data.frame(x=c(1,2,1,1),y=c(3,2,1,1))
+df
+```
+
+```{r}
+df$y<- NULL
+df
+```
+
+```{r}
+df$y
+is.null(df$y)
+```
+
+## Valores no disponibles / Missing Values
+
+Son valores para los cuales no tenemos ninguna medida, se representan con un NA ("Not Available).
+
+Pertenecen a valores perdidos que no se han podido recuperar, errores de medida, perdidas de datos, etc..
+
+En R los detectamos con: *is.na(x)*
+
+y podemos reemplazar su valor con la media, moda, mediana, etc...
+
+o simplemente eliminarlos: *na.omit(x)*
+
+Si estamos trabajando con series temporales es posible que queramos hacer una interpolación de los valores perdidos:
+
+zoo::na.approx(x)
+
+```{r}
+NA
+```
+
+```{r}
+data<-c(1,3,NA,6)
+data
+```
+
+```{r}
+is.na(data)
+```
+
+```{r}
+na.omit(data)
+```
+
+```{r}
+paste("El número de elementos con NA:",length(data[is.na(data)]))
+```
+
+```{r}
+paste("El número de elementos que NO son NA:",length(data[!is.na(data)]))
+```
+
+```{r}
+data[1]<-10
+data
+```
+
+```{r}
+data[is.na(data)] <- 28
+data
+```
+
+## Ejemplo datos reales
+
+#### Dataset coches
+
+Partimos del dataset de seguro de automóviles que podemos descargar de:
+
+https://archive.ics.uci.edu/ml/datasets/Automobile
+
+```{r}
+autos<-read.csv("./data/imports-85.data", col.names = c("risk", "normalized_losses", 
+                                                         "make", "fuel_type", "aspiration",
+           "num_doors", "body_style", "drive_wheels", "engine_location",
+           "wheel_base", "length", "width", "height", "curb_weight",
+           "engine_type", "num_cylinders", "engine_size", "fuel_system",
+           "bore", "stroke", "compression_ratio", "horsepower", "peak_rpm",
+           "city_mpg", "highway_mpg", "price"))
+```
+
+Nos quedamos solo con las columnas: "price","horsepower","body_style","risk"
+
+```{r}
+autos <- autos[,c("price","horsepower","body_style","risk")]
+```
+
+En este CSV cuando existe un valor desconocido lo han indicado con el caracter '?'. Por ese motivo la columna 'price' y 'horsepower' es factor en lugar de numeric. Tenemos que indicarle a R que son NA:
+
+```{r}
+autos$price[which(autos$price=='?')] <- NA
+autos$horsepower[which(autos$horsepower=='?')] <- NA
+```
+
+Tenemos que convertir el factor de 'price' y 'horsepower' en valores numéricos:
+
+```{r}
+autos$price <- as.numeric(autos$price)
+autos$horsepower <- as.numeric(autos$horsepower)
+```
+
+#### Dataset cancer esófago
+
+Se realizó un estudio retrospectivo de casos y controles de 200 casos masculinos de cáncer de esófago y 778 controles poblacionales en Ille-et-Vilanine (Francia). Los logaritmos de los riesgos relativos de desarrollar la enfermedad aumentan linealmente con el consumo diario de alcohol y tabaco de manera independiente. El efecto combinado de ambos se ajusta con un modelo multiplicativo que se propone. Este modelo podría ser aplicable a otras situaciones. Explica la proporción de sexos y las diferencias urbanas / rurales observadas en Ille-er-Vilaine.
+
+http://www.math.umd.edu/\~evs/s430.old/Data/ESOPH.dat
+
+Columnas: \* agegp: grupo de edad \* alcgp: consumo de alcohol \* tobgp: consumo de tabaco \* ncases: número de casos de cancer \* ncontrol: población de control
+
+```{r}
+dfcancer<-read.csv("data/ESOPH.dat",skip=43,sep = "")
+head(dfcancer)
+```
+
+En ocasiones podemos convertir los factores en números. Com en este caso que sustituimos los rangos por su valor medio:
+
+#### Dataset de Strava
+
+Cargar fichero 'data/activities_strava.csv'
+
+```{r}
+strava<-read.csv('data/activities_strava.csv')
+```
+
+-   Observar el número y tipo de columnas
+
+```{r}
+nrow(strava) # número de filas
+ncol(strava) # número de columnas
+str(strava) # tipo columnas
+summary(strava) #Resumen de las columnas
+```
+
+-   Quedarse con las columnas: Activity.Date, Activity.Type, Moving.Time y Elapsed.Time
+
+```{r}
+strava <- strava[,c("Activity.Date", "Activity.Type", "Moving.Time", "Elapsed.Time")]
+```
+
+-   Quedarse con las muestras que tengan: Moving.Time \> 1000
+
+```{r}
+strava <- strava[which(strava$Moving.Time > 1000),]
+```
+
+-   Mostrar las filas del 4 al 8 de las columnas Activity.Type y Moving.Time
+
+```{r}
+strava[4:8, c('Activity.Type', 'Moving.Time') ]
+```
+
+-   Crear una nueva columna llamada Moving.Minutes que sea igual a Moving.Time/60
+
+```{r}
+strava$Moving.Minutes <- strava$Moving.Time/60
+#strava["Moving.Minutes"] <- strava["Moving.Time"]/60
+```
+
+-   ¿Cuantos tipos de Activity.Type hay? ¿Cuantos hay en cada categoría?
+
+Dos formas de hacerlo: 1- Factor
+
+```{r}
+strava$Activity.Type <- factor(strava$Activity.Type)
+summary(strava)
+```
+
+2- Utilizando clase Table:
+
+```{r}
+table(strava$Activity.Type)
+```
+
+-   Convertir la columna Activy.Date en fecha
+
+```{r}
+Sys.setlocale("LC_ALL","C")
+strava$Activity.Date<-as.POSIXct(strava$Activity.Date, format='%b %d, %Y, %I:%M:%S %p')
+```
+
+-   ¿Como obtendrías un resumen de todos los datos del dataframe?
+
+```{r}
+summary(strava)
+```

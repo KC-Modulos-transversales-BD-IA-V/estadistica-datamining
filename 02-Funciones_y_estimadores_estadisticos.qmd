@@ -1,0 +1,481 @@
+---
+format: html
+editor: visual
+---
+
+# Funciones en R
+
+Vamos a crear nuestra primera función para restar dos números.
+
+```{r}
+restaDosNumeros <- function(x,y){
+   z <- x-y
+   return(z)
+}
+```
+
+```{r}
+ls()
+```
+
+```{r}
+restaDosNumeros
+```
+
+```{r}
+restaDosNumeros(10,7)
+```
+
+Podemos referenciar los parámetros por nombre:
+
+```{r}
+restaDosNumeros(y=10, x=7)
+```
+
+Podemos definir parámetros opcionales con un valor por defecto.
+
+```{r}
+restaDosNumerosConEscala<-function(x, y, scale=1){
+  (x-y)*scale
+}
+```
+
+```{r}
+restaDosNumerosConEscala(10,7)
+```
+
+```{r}
+restaDosNumerosConEscala(10,7,scale=5)
+```
+
+Las funciones en R son objetos como puede ser un número, un vector o un data frame.
+
+```{r}
+ls()
+```
+
+Podemos ver su contenido llamando al nombre del objeto, sin paréntesis.
+
+```{r}
+restaDosNumerosConEscala
+```
+
+## Estimador estadístico
+
+Vamos a ver varios ejemplos de funciones en R utilizando estimadores estadísticos.
+
+Un [estimador](https://es.wikipedia.org/wiki/Estimador) es un estadístico (esto es, una función de la muestra) usado para estimar un parámetro desconocido de la población.
+
+Un estimador es una función que coje valores de una muestra de datos y hace un resumen, **estima un valor que define la muestra**.
+
+Como ejemplo de población utilizaremos el siguiente vector de alturas:
+
+```{r}
+alturas<-c(1.80,1.60,1.50,1.90,1.75,1.63,1.65)
+```
+
+### Media aritmética
+
+En matemáticas y estadística, la [media aritmética](https://es.wikipedia.org/wiki/Media_aritm%C3%A9tica) (también llamada promedio o media) de un conjunto finito de números es el valor característico de una serie de datos cuantitativos, objeto de estudio que parte del principio de la esperanza matemática o valor esperado, se obtiene a partir de la suma de todos sus valores dividida entre el número de sumandos.
+
+$$
+\bar{x} = \frac{1}{N} \sum_{i=1}^N x_i
+$$
+
+En R la función de la media se podría definir así:
+
+```{r}
+myMean<-function(X, na.rm=F){
+  if (na.rm){
+    X = na.omit(X)
+  }
+  N <- length(X)
+  m <- 0
+  for (xi in X){
+    m <- m+xi
+  }
+  return(m/N)
+}
+```
+
+```{r}
+myMean(alturas)
+```
+
+Evidentemente R tiene una función para la media cuya ejecución es mucho más rápida que nuestra función:
+
+```{r}
+mean(alturas)
+```
+
+### Media truncada
+
+La media truncada se utiliza cuando queremos quitar los $2p$ elementos más extremos ($p$ elementos por arriba y $p$ por abajo) del array del cómputo de la media. La media truncada es un estimador más robusto que la media.
+
+$$
+\bar{x} = \frac{1}{N-2p} \sum_{i=p+1}^{N-p} x_i
+$$
+
+En R se utiliza la función $mean$ con el parámetro $trim$ que indica que porcentaje de elementos del array eliminamos antes de hacer la media
+
+```{r}
+alturas2 <- c(alturas,150)
+alturas2
+```
+
+```{r}
+mean(alturas2)
+```
+
+```{r}
+mean(alturas,trim = 0.2)
+```
+
+```{r}
+?mean
+```
+
+### Media geométrica
+
+La [media geométrica](https://es.wikipedia.org/wiki/Media_geom%C3%A9trica) de una cantidad arbitraria de números (por decir n números) es la raíz n-ésima del producto de todos los números.
+
+$$
+\sqrt[N] {\prod^N x_i }
+$$
+
+Es equivalente a: \[ e\^{\frac{1}{N} \sum\_{i=1}\^N log(x_i)} \]
+
+```{r}
+myGeometricMean<-function(X,na.rm=F){
+    if (na.rm==T){
+        X <- na.omit(X)
+    }
+    m <- 1
+    for (xi in X){
+        m <- m*xi
+    }
+    m^(1/length(X))
+    
+}
+```
+
+**¿Cual es el TAE medio en el cambio Bitcoins en doláres desde 2011?**
+
+En la siguiente tabla podemos ver el precio en dólares a principios de cada año, junto con su revalorización porcentual durante ese año.
+
+```{r}
+year<-c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022)
+value<-c(0.3, 4.7,13.2,760,316,430,980,12000,13400,3200,6500,32000,47000)
+ratio<-c(NA,value[2:length(value)]/value[1:length(value)-1])
+rate<-(ratio-1)*100
+```
+
+```{r}
+bitcoinValue<-data.frame(año=year,valor=value,TAE=round(rate,2),ratio=round(ratio,4))
+bitcoinValue
+```
+
+```{r}
+print(paste0("La media aritmética de todos los interes TAE es: ",
+             round(mean(bitcoinValue$TAE,na.rm=T),2),"%"))
+```
+
+```{r}
+myGeometricMean(bitcoinValue$ratio,na.rm=T)
+```
+
+```{r}
+realTAEmean<-(myGeometricMean(bitcoinValue$ratio,na.rm=T)-1)*100
+print(paste0("La media real de todos los interes TAE es:",
+             round(realTAEmean,2),"%"))
+```
+
+```{r}
+initialAmount<-10
+
+print(paste0("Si hubieramos invertido $",initialAmount," a un interés del ",round(realTAEmean,2),
+             "% TAE, 10 años después tendríamos $", round(initialAmount*(realTAEmean/100+1)^7)))
+```
+
+![](https://akifrases.com/frases-imagenes/frase-el-interes-compuesto-es-la-fuerza-mas-poderosa-de-la-galaxia-albert-einstein-110175.jpg)
+
+![](https://i.pinimg.com/originals/f0/a7/28/f0a72881dabf1602f49665f714458c15.jpg)
+
+### Varianza / desviación típica
+
+La [varianza](https://es.wikipedia.org/wiki/Varianza) (que suele representarse como $\sigma ^{2}$,$s^2$ o $Var(X)$) de una variable aleatoria es una medida de dispersión definida como la esperanza del cuadrado de la desviación de dicha variable respecto a su media. O en pocas palabras, es la media de los residuos al cuadrado.
+
+Es decir, define lo mucho que varía una variable aleatoria respecto a la media:
+
+-   Si todos los valores son iguales, no hay variación, la varianza es 0.
+-   Si los valores son muy diferentes unos de otros la varianza es alta.
+
+El motivo de usar el cuadrado es porque queremos ver lo mucho que cambia cada elemento sin importar su signo, si cambia por *arriba* o por *abajo*, el signo se elimina. El hecho de ser una función al cuadrado también da mayor importancia a los valores extremos. El problema que esto origina es que las unidades de la varianza están ambién al cuadrado, por ello, a veces se utiliza la **desviación típica**.
+
+La raíz cuadrada de la *varianza* es la **desviación típica** que indica **como de típica es la desviación respecto a la media en sus mismas unidades**.
+
+$$
+Var[x] = \frac{1}{N} \sum_{i=1}^N \left( x_i-\bar{x} \right)^2 
+$$
+
+En R la función de la varianza se podría definir así:
+
+```{r}
+myVar<-function(X){
+   m <- mean(X)
+   v<-0
+   for (xi in X){
+     v <- v + (xi-m)^2
+   }
+   return(v/length(X))
+}
+```
+
+```{r}
+print(paste("La varianza es:",myVar(alturas)))
+print(paste("La desviación típica es:",sqrt(myVar(alturas))))
+```
+
+Evidentemente R tiene una función para la varianza (*var*) y la desviación típica (*sd*) cuya ejecución es mucho más rápida que nuestra función:
+
+```{r}
+print(paste("La varianza es:",var(alturas)))
+print(paste("La desviación típica es:",sd(alturas)))
+```
+
+```{r}
+?var
+```
+
+La varianza es un estimador sesgado y R utiliza la fórmula del estimador no sesgado. Veremos que significa eso en el futuro.
+
+#### Ejemplo varianza acciones
+
+En la siguiente tabla tenemos el valor que una acción ha incrementado su precio respecto al día anterior. Miramos dos acciones, las de Telefónica y Tesla.
+
+```{r}
+myStocks<-read.csv("data/stockRatio.csv",stringsAsFactor=F)
+str(myStocks)
+```
+
+```{r}
+summary(myStocks)
+```
+
+```{r}
+head(myStocks$date)
+```
+
+```{r}
+myStocks$date<-as.Date(myStocks$date, format="%Y-%m-%d")
+str(myStocks)
+```
+
+```{r}
+summary(myStocks)
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+
+plot(myStocks$date, myStocks$TSLA, xlab= "Fecha", ylab="%", col="blue")
+points(myStocks$date, myStocks$TEF, xlab= "Fecha", ylab="%", col="red",pch="*")
+legend(myStocks$date[2],7,c("TESLA","TEF"), pch=c("o","*"),col=c("blue","red"), y.intersp = 2)
+grid()
+```
+
+En la gráfica podemos ver como las acciones de Tesla varían mucho más que las acciones de las de telefónica. Mientras que las acciones de Tesla tienen jornadas donde las subidas o bajadas exceden el 5%, en Telefónica raro es el día que varían más del 3%.
+
+La varianza es el estimador estadístico que mejor refleja estos cambios:
+
+```{r}
+paste("Varianza de TESLA:",var(myStocks$TSLA))
+paste("Varianza de TELEFONICA:",var(myStocks$TEF))
+paste("Desviación típica de TESLA:",sd(myStocks$TSLA))
+paste("Desviación típica de TELEFONICA:",sd(myStocks$TEF))
+```
+
+#### Desigualdad de Chebyshev (Нера́венство Чебышёва)
+
+La desigualdad de Chebyshev es un resultado que ofrece una cota superior a la probabilidad de que el valor de una variable aleatoria con varianza finita esté a una cierta distancia de su esperanza matemática.
+
+$$
+Pr\left( \|X-\bar{x}\| \geq k · \sigma \right) \leq \frac{1}{k^2} 
+$$
+
+O dicho de otras palabras, la probabilidad de que haya valores **fuera** del intervalo $\left[ \bar{x}-k\sigma, \bar{x}+k\sigma \right]$ es menor o igual a $1/{k^2}$.
+
+La desigualdad de Chebyshev es un límite muy pesimista, se pueden obtener mejores resultados cuando la distribución es conocida.
+
+#### Ejemplo Alturas
+
+Si miramos el vector de alturas anterior, podemos sacar una tabla en función de k.
+
+Por ejemplo podemos decir que como máximo el 44% ( $\frac{1}{1.5^2}=0.4444$ ) de las muestras se encuentran fuera del intervalo $\left[ \bar{x}-k\sigma, \bar{x}+k\sigma \right]= [1.69-1.5·0.135,1.69+1.5·0.135]=[1.487639 ,1.892361]$
+
+```{r}
+k <- c(1.01,seq(from=1.5, to=5, by=0.5))
+
+margen <- data.frame(limite_inf=mean(alturas)-k*sd(alturas),
+                     limite_sup=mean(alturas)+k*sd(alturas),
+                     prob = 1/k^2,
+                     k
+                    )
+margen
+```
+
+```{r}
+plot(margen$k,margen$prob,t='l',xlab="k",ylab="Probabilidad",main="Desigualdad de Chebyshev")
+grid()
+```
+
+```{r}
+plot(margen$limite_sup-margen$limite_inf,margen$prob,t='l',
+     xlab="Tamaño del margen",
+     ylab="Probabilidad",main="Desigualdad de Chebyshev")
+grid()
+```
+
+#### Ejemplo varianza acciones
+
+Podemos repetir el ejercicio anterior con las acciones. Al menos el 50% de las acciones de Telefónica se encuentran en el rango \[-1.5,1.53\], mientras que en cambio las acciones de Tesla, al tener una mayor varianza su rango crece a \[-3,3.35\].
+
+```{r}
+k<-c(sqrt(1/0.75),sqrt(1/0.5),sqrt(1/0.25))
+margen<-data.frame(TEF_inf=mean(myStocks$TEF)-k*sd(myStocks$TEF),
+                   TEF_sup=mean(myStocks$TEF)+k*sd(myStocks$TEF),prob=1/k^2,
+                   TESLA_inf=mean(myStocks$TSLA)-k*sd(myStocks$TSLA),
+                   TESLA_sup=mean(myStocks$TSLA)+k*sd(myStocks$TSLA)
+                  )
+
+margen
+```
+
+### Mediana
+
+La mediana es el valor de una distribución tal que la mitad de los elementos son superiores y la mitad son inferiores.
+
+```{r}
+myMedian<-function(x){
+  x <- sort(x)
+  i <- (length(x)+1)/2
+  if (round(i)==i){
+    return(x[i])
+  }else{
+    return((x[floor(i)]+x[ceiling(i)])/2)
+  }
+}
+```
+
+```{r}
+myMedian(alturas)
+```
+
+Como siempre es aconsejable utilizar la función que R ha preparado
+
+```{r}
+median(alturas)
+```
+
+Media y mediana no tienen porqué ser iguales. Ejemplo salarios brutos españoles de 2020 [Fuente](http://www.ine.es/prensa/epa_2016_d.pdf):
+
+-   **Salario medio:** 25.165,51€/mes
+-   **Salario mediano:** 20.920,12€/mes
+
+Esto indica que hay poca gente con sueldos muy altos que sube la media, la distribución no es simétrica.
+
+![](pics/salario_medio_espa%C3%B1a.png)
+
+### Cuartiles
+
+Los [cuartiles](https://es.wikipedia.org/wiki/Cuartil) son los tres valores que dividen un conjunto de datos ordenados en cuatro partes porcentualmente iguales.
+
+-   Q1: El 25% de las muestras se encuentran por debajo del primer cuartil.
+-   Q2: El 50% de las muestras se encuentran por debajo del segundo cuartil. Este valor también se le conoce como *mediana*
+-   Q3: El 75% de las muestras se encuentran por debajo del tercer cuartil.
+-   Rango intercuantílico (IQR): Q3-Q1
+
+Una forma muy práctica de mostrar estos valores es con el diagrama de cajas (boxplot en inglés). El boxplot se compone de:
+
+-   Caja (Box): El lado superior indica el lugar de Q3, el lado inferior es Q1 y la línea que lo atraviesa es Q2
+-   Bigotes (Whiskers): Dos líneas que se exitienden 1.5 veces el IQR desde Q3 y desde Q1.
+-   Valores atípicos (Outlayers): Valores que se encuentran fuera de los bigotes.
+
+```{r}
+summary(alturas)
+```
+
+```{r}
+X<-myStocks$TEF
+boxplot(X)
+grid()
+q1<-quantile(X,0.25)
+q3<-quantile(X,0.75)
+iqr<-q3-q1
+names(iqr)<-"iqr"
+q1
+q3
+iqr
+
+text(1.25,q3,"Q3")
+text(1.29,median(X),"mediana")
+text(1.25,q1,"Q1")
+text(1.25,q3+1.5*iqr,"Q3+1.5·IQR")
+text(1.25,q1-1.5*iqr,"Q1-1.5·IQR")
+
+text(0.9,q3+1.8*iqr,"Outlayers")
+```
+
+```{r}
+?boxplot
+```
+
+### Quantiles o percentiles
+
+El percentil indica el porcentaje de muestras que se encuentran debajo de un umbral dado. Es igual al cuantil, solo que este está dado en tanto por 1 mientras que el percentil está dado en tanto por ciento.
+
+#### Ejemplo:
+
+Los percentiles se utilizan mucho para mostrar si el peso de un bebé es el correcto o se desvía mucho de lo esperado. ![](pics/percentiles.png) Fuente [OMS](http://www.who.int/childgrowth/standards/sft_wfa_girls_p/en/)
+
+En R tenemos la función *quantile()*
+
+```{r}
+quantile(alturas,0.9)
+```
+
+Ejemplo del uso de percentiles en R:
+
+https://momo.isciii.es/public/momo/dashboard/momo_dashboard.html
+
+### Moda
+
+Es el valor con mayor frecuencia en una distribución.
+
+```{r}
+set.seed(123)
+# Creamos una secuencia de 40 números aleatorios
+vec<-round(rnorm(40,mean=7,sd=2))
+vec
+```
+
+```{r}
+#Contamos las veces que aparece cada uno
+myTable<-table(vec)
+myTable
+```
+
+```{r}
+names(myTable)[which.max(myTable)]
+```
+
+```{r}
+myTable[4]
+```
+
+```{r}
+print(paste("La posición del máximo es:",which.max(myTable)))
+
+print(paste("El número más común es:",names(myTable)[which.max(myTable)]))
+print(paste("Ese número ha aparecido ",max(myTable),"veces"))
+```
