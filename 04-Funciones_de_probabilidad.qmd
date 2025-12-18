@@ -1,0 +1,1294 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Histograma
+
+Representación gráfica de una variable en forma de barras donde la
+superficie de cada barra es proporcional a la frecuencia de los valores
+representados.
+
+Nos sirve para ver como se distribuyen los datos aleatorios.
+
+## Análisis de la población española en 2023
+
+Se han descargado los datos oficiales del Instituto Nacional de
+Estadística (http://www.ine.es), la población residente por fecha, sexo
+y edad a fecha del 1 de enero de 2023. El fichero
+[9663c.csv](http://www.ine.es/jaxiT3/Tabla.htm?t=9663&L=0) se encuentra
+accesible desde el notebook.
+
+```{r}
+library(dplyr)
+poblacion_raw<-read.csv("data/68519.csv",skip=0,fileEncoding="ISO-8859-1",header=T, sep=';',stringsAsFactor=F) |> select(Edad,Sexo, Total, Nacionalidad)
+head(poblacion_raw,7)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+poblacion <- poblacion_raw  |> filter(Nacionalidad=='Total') |> mutate(Total=as.numeric(gsub("\\.","",Total))) |> pivot_wider(names_from = Sexo, values_from = Total)  |>
+ mutate(edad=as.numeric(gsub("año(s|)","",Edad))) |> drop_na() |> 
+  select(-Edad)  |> arrange(edad)
+#arrange(desc(Edad))
+head(poblacion)
+```
+
+```{r}
+library(ggplot2)
+ggplot(data=poblacion, aes(x=edad, y=Total))+geom_col()+
+  geom_vline(xintercept = 46, color="blue")+
+  geom_vline(xintercept = 67, color="red")+
+  geom_vline(xintercept = 83, color="green")
+```
+
+```{r}
+ggplot(data=poblacion, aes(x=edad))+
+  geom_col(aes(y=Hombres),fill="blue")+
+  geom_col(aes(y= -Mujeres),fill="red")+
+  scale_y_continuous(breaks=seq(-5e5,5e5,length.out=11), labels=abs(seq(-5e5,5e5,length.out=11)/1000))+
+  xlab("Edad")+ylab("Mujeres           Hombres")+ggtitle("Pirámide poblacional de España")+
+  coord_flip()
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+#poblacion$porcentaje <- (poblacion$Hombres/poblacion$Mujeres-1)*100
+#poblacion$porcentaje <- with(poblacion, (Hombres/Mujeres-1)*100)
+poblacion <- poblacion |> mutate(porcentaje=(Hombres/Mujeres-1)*100) |> mutate(Exceso=factor(porcentaje>0, labels = c('Mujeres','Hombres')))
+
+ggplot(data=poblacion, aes(x=edad, y=porcentaje))+geom_col(aes(fill=Exceso))+
+  geom_hline(yintercept = 7, color='red')+
+  geom_vline(xintercept = 21, color='blue')+
+  scale_x_continuous(breaks = seq(0,100, by=10))
+```
+
+## Análisis de dataset Iris
+
+Data set de medidas en centímetros de la longitud y anchura de sépalos
+de tres especies de Iris: Iris setosa, versicolor, and virginica.
+
+```{r}
+print(paste("El dataset iris tiene",nrow(iris),"filas"))
+head(iris)
+```
+
+Representamos un histograma de la longitud de los sépalos con diferente
+número de barras. El aumentar el número de barras nos da una mayor
+resolución, pero tenemos menos precisión porque hay menos muestra por
+cada barra. En R el histograma se dibuja con la función *hist()*.
+
+```{r}
+sort(iris$Sepal.Length)
+```
+
+```{r}
+par(mfrow = c(1,2))
+hist(iris$Sepal.Length, 5, xlab="Longitud sépalo", ylab="Frecuencia", main="Iris")
+hist(iris$Sepal.Length, 15, xlab="Longitud sépalo", ylab="Frecuencia", main="Iris")
+```
+
+Si queremos utilizar *ggplot* para pintar histogramas podemos utilizar
+la función *geom_histogram()*:
+
+Podemos agrupar los histogramas por la especie. Así podemos ver como se
+*distribuye* la longitud de cada sépalo en función de la especie.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+ggplot(data=iris, aes(x=Sepal.Length))+
+  geom_histogram(fill='#7070BB', color='#2020EE', breaks=seq(3,10, by=0.5))+
+  geom_boxplot(color='red', width=6, alpha=0.5)+
+  xlab('Longitud del sépalo')+ylab('Conteo')
+```
+
+## Ejemplo con datos reales
+
+Dataset de Strava de mi cuenta personal.
+
+```{r}
+strava = read.csv("data/activities_strava.csv")
+head(strava)
+str(strava)
+```
+
+```{r}
+strava<-strava[c("Activity.Date","Activity.Name","Activity.Type","Elapsed.Time","Distance","Moving.Time")]
+head(strava)
+summary(strava)
+```
+
+```{r}
+ride<-strava[strava$Activity.Type=="Ride",]
+summary(ride)
+```
+
+```{r}
+library(gridExtra)
+
+g1 <- ggplot(ride, aes(y=Distance))+geom_boxplot()
+
+g2 <- ggplot(ride, aes(y=Moving.Time/60))+geom_boxplot()
+
+
+grid.arrange(g1,g2, nrow=1)
+```
+
+```{r}
+
+ride_filtered <- ride |> filter(Moving.Time<60*60) |> filter(Distance>7.5 & Distance < 8.5) |> mutate(Moving.Minutes=Moving.Time/60)
+
+g1 <- ggplot(ride_filtered, aes(y=Distance))+geom_boxplot()
+
+g2 <- ggplot(ride_filtered, aes(y=Moving.Minutes))+geom_boxplot()
+
+
+grid.arrange(g1,g2, nrow=1)
+```
+
+```{r}
+ggplot(ride_filtered, aes(x=Moving.Minutes))+geom_histogram(aes(fill=Activity.Name))+
+  geom_boxplot(color='red', alpha=0.5)
+```
+
+```{r}
+ride_filtered |> filter(Activity.Name %in% c('Morning Ride', 'Afternoon Ride', 'Evening Ride')) |> ggplot(aes(y=Moving.Minutes, fill=Activity.Name , x=Activity.Name))+geom_boxplot()
+```
+
+# Función de densidad de probabilidad
+
+[Función](https://es.wikipedia.org/wiki/Funci%C3%B3n_de_densidad_de_probabilidad)
+que describe la probabilidad relativa según la cual dicha variable
+aleatoria tomará determinado valor.
+
+Podemos pensar en ella como un **histograma con un gran número de
+barras**, si somos rigurosos sería un histograma cuando el número de
+barras tiende a infinito (y su ancho a cero).
+
+Las podemos dividir en dos grupos:
+
+-   Discretas: Son aquellas que solo pueden tomar valores dentro de un
+    cojunto finito: Cara/Cruz, Oros/Bastos/Espadas/Copas. Se pueden
+    representar con números enteros (1,2,3,4....)
+
+-   Continuas: Son aquellas que pueden tomar cualquier valor, números
+    reales.
+
+## Propiedades
+
+Supongamos que $f(x)$ es la función de densidad de probabilidad de una
+variable aleatoria $x$.
+
+Su integral (suma) a lo largo de todo el dominio es igual a 1. Esto
+significa que la suma de probabilidades de todos los posibles valores
+será 1.
+
+Para una distribución continua será: $$ \int_{- \infty }^{\infty}f(x)
+dx = 1 $$
+
+Para una distribución discreta será: $$ \sum_{- \infty }^{\infty}f(x)
+dx = 1 $$
+
+Su integral (suma) a lo largo de dos puntos $[a,b]$, da la probabilidad
+de que nuestra variable aleatoria $x$ caiga en ese rango:
+
+Para una distribución continua será:
+$P[a \leq X \leq b]=\int_{a}^{b}f(x) dx$
+
+Para una distribución discreta será:
+$P[a \leq X \leq b]=\sum_{a}^{b}f(x) dx$
+
+#### Ejemplo
+
+Si elegimos una persona al azar en España, ¿cual es la probabilidad de
+que sea un *milenial*?
+
+Según la
+[Wikipedia](https://es.wikipedia.org/wiki/Generaci%C3%B3n_Y#Generaci%C3%B3n_Y_en_el_mundo)
+los *milenials* podrían comprender los nacidos entre 1980 y 2000.
+
+```{r}
+f_poblacion <- poblacion[,c("Total","edad")]
+f_poblacion$nacimiento <- 2023-f_poblacion$edad
+
+f_poblacion$Ratio <- f_poblacion$Total/sum(f_poblacion$Total)
+
+f_poblacion_milenial <- sum(f_poblacion$Ratio[f_poblacion$nacimiento>=1980 &
+                                              f_poblacion$nacimiento<=2000  ])
+
+paste0("La probabilida de que eligiendo una persona al azar en España sea milenial es ",
+      round(f_poblacion_milenial*100),"%")
+
+```
+
+## Función de distribución acumulativa
+
+Nos dice la probabilidad de obtener un valor menor o igual a cierto
+umbral dado en nuestra variable aleatoria $x$
+
+$$ F(x)=P[X \leq a]=\int_{-\infty }^{a}f(x) dx $$
+
+#### Ejemplo
+
+Si elegimos una persona al azar en España, ¿cual es la probabilidad de
+que sea menor o igual de 64 años?
+
+```{r}
+f_poblacion_joven <- sum(f_poblacion$Ratio[f_poblacion$edad<=64])
+
+paste0("La probabilidad de que eligiendo una persona al azar su edad sea menor o igual a 64 años es ",
+      round(f_poblacion_joven,3)*100,"%")
+
+```
+
+# Funciones de probabilidad conocidas
+
+A continuación vamos a ver las funciones de probabilidad que aparecen
+con mayor frecuencia cuando realizamos algún estudio estadístico.
+
+Todas están relacionadas entre sí como veremos a continuación. A modo
+resumen vamos a ver;
+
+-   Distribución uniforme: Continua. Todos los valores tienen la misma
+    posibilidad.
+-   Distribución Bernoulli: Discreta. Dos posibles soluciones, ej:
+    Moneda al al arie
+-   Distribución Binomial: Discreta. Generalización de Bernoulli, ej:
+    Tiramos varias monedas al aire
+-   Distribución Poisson: Discreta. Generalización de Binomial cuando
+    hay infinitos eventos de probabilidad muy baja.
+-   Distribución Exponencial: Contínua. Tiempo medio entre courrenia de
+    ventos de una distribución de Bernoulli.
+-   Distribución Gaussiana: Contínua. La distribución más usada, toda
+    combinación de variables aleatorias tiende a una Gaussiana.
+-   Distribución Chi cuadrado: Contínua. Es el cuadrado de una
+    distribución gaussiana.
+
+## Distribución uniforme
+
+Es una familia de funciones de probabilidad donde cada elemento, dentro
+de cierto intervalo, tiene la misma probabilidad de aparecer.
+
+**Ejemplo:** La lotería, todos los números tienen las mismas
+posibilidades.
+
+| Función de densidad de probabilidad | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![PDF](pics/func_Uniform_Distribution_PDF.png) | ![PDF](pics/func_Uniform_Distribution_CDF.png) |
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$): $$
+\mu=\frac{a+b}{2} \qquad \sigma^2=\frac{(b-a)^2}{12} 
+$$
+
+### Funciones en R
+
+-   runif(x,min=a,max=b) : genera x números aleatorios
+-   dunif(x,min=a,max=b) : función de densidad en el punto x
+    (likelihood)
+-   punif(x,min=a,max=b) : probabilidad acumulada P(X\<x)=p
+-   qunif(p,min=a,max=b) : inversa de la probabilidad acumulada
+    P(X\<x)=p
+
+Podemos generar una variable aleatoria que siga una distribución
+uniforme mediante la función *runif()*.
+
+Por ejemplo si queremos generar 10000 muestras de una distribución
+uniforme entre 2 y 7 basta con ejecutar:
+
+```{r}
+set.seed(2)
+myUnifVector<-runif(10000,min=2,max=7)
+summary(myUnifVector)
+length(myUnifVector)
+```
+
+Podemos ver como el histograma de *myUnifVector* se parece bastante a la
+función de densidad de probabilidad esperada:
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(data=data.frame(x=myUnifVector), aes(x))+
+  geom_histogram(bins=15,fill="#7070BB",color="#010101")+
+  #geom_jitter(width=0, height=500, aes(y=500), alpha=0.2)+
+  scale_x_continuous(breaks = seq(0,10,1), lim=c(0,10))
+```
+
+Las barras que se encuentran los límites de la distribución, en 2 y 7,
+aparecen más bajas porque realmente tienen menos elementos. Parte de la
+barra cae fuera de los límites de nuestra distribución uniforme.
+
+Esto se puede solucionar haciendo las barras más finas, añadiendo más
+barras a costa de empeorar la precisión.
+
+```{r}
+ggplot(data=data.frame(x=myUnifVector), aes(x))+
+  geom_histogram(bins=50,fill="#7070BB",color="#010101")+ 
+  scale_x_continuous(breaks = seq(0,10,1), lim=c(0,10))
+```
+
+Cuantas más barras utilicemos, más resolución tendremos, pero demasiada
+nos puede alejar de la función de densidad de probabilidad real.
+
+Si tenemos pocas muestras el histograma aparecerá con muchas
+variaciones, puede ser dificil intuir la función de densidad de
+probabilidad.
+
+Lo ideal sería utilizar unas **barras muy estrechas** para calcular el
+histograma y luego **suavizar** la función resultante para evitar los
+saltos bruscos. Si posteriormente normalizamos por el número de muestras
+acabamos con una estimación de la **función de densidad de
+probabilidad**.
+
+La librería *ggplot* incorporta la función *geom_density()* que hace eso
+mismo, estima la función de densidad de probabilidad utilizando
+diferentes funciones de suavizado.
+
+```{r}
+ggplot(data=data.frame(x=myUnifVector), aes(x))+
+  geom_density(fill="#7070BB",color="#010101", bw=0.1)+ 
+  scale_x_continuous(breaks = seq(0,10,1), lim=c(0,10))
+```
+
+Por la función de suavizado (llamada kernel) es una gaussiana, pero en
+nuestro caso particular encajaría mejor una función rectangular que
+tiene una caida más abrupta.
+
+```{r}
+ggplot(data=data.frame(x=myUnifVector), aes(x))+
+  geom_density(fill="#7070BB",color="#010101",kernel="rectangular", bw=0.07)+ 
+  scale_x_continuous(breaks = seq(0,10,1), lim=c(0,10))
+```
+
+```{r}
+ggplot(data=data.frame(x=myUnifVector), aes(x))+
+  geom_density(fill="#7070BB",color="#010101",kernel="rectangular", bw=0.01)+
+  #geom_density(fill="#7070BB",color="#010101")+ 
+  scale_x_continuous(breaks = seq(0,10,1), lim=c(0,10))
+```
+
+## Distribución de Bernoulli
+
+Es una distribución discreta que puede tomar dos valores uno con
+probabilidad $p$ y otro $q=1-p$. Se utiliza para describir sucesos que
+solo tienen dos posibles resultados como Si/No, 1/0 o Cara/Cruz.
+
+**Ejemplo:** Tiramos una vez una moneda al aire.
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$):
+
+$\mu=p \qquad \sigma^2=p·q=p·(1-p)$
+
+```{r}
+p<- 0.7
+q<- 1-p
+
+df <- data.frame(x=c("Si","No"), prob=c(p,q))
+ggplot(data=df,aes(x=x,y=prob))+geom_point(color="blue")+geom_col(width=0.005,color="blue")+
+ theme_bw()+ggtitle("Función de densidad de probabilida \n de una distribución de Bernuilli")
+```
+
+La función de densidad de probabilidad se puede representar como:
+
+$$
+f(k;p)=\left\{ 
+\begin{matrix} 
+p & \text{si  } k=1 \\  
+1-p & \text{si  } k=0 
+\end{matrix}
+\right.
+$$
+
+donde $k$ solo admite dos posibles valores $k \in \left\{0,1 \right\}$.
+
+Esta formula también se puede expresar como: $f(k;p)=p^k(1-p)^{1-k}$
+
+La distribución de Bernoulli es un caso especial de la **distribución
+binomial** con n=1.
+
+Podemos simular una distribución de Bernoulli a partir de una uniforme
+simplemente comparando si el valor supera un umbral que viene
+determinado por la probabilidad de la distribución binomial:
+
+```{r}
+p<-0.7
+v<-runif(5,min=0,max=1)
+v
+as.integer(v>p)
+```
+
+```{r}
+
+slices <- c(p,1-p)
+lbls <- c("Cara", "Cruz")
+pie(slices, labels = lbls, main="Probabilidad")
+```
+
+## Distribución binomial
+
+La distribución binomial es una generalización de la distribución de
+Bernoulli para $n$ sucesos independientes, cada uno de los cuales tiene
+dos posibles resultados Si/No con probabilidad $p$.
+
+**Ejemplo:** Tiramos al aire 3 monedas y mirarmos cual es la
+probabilidad de que 2 salgan cara.
+
+Variables que definen la distribución:
+
+-   p - probabilidad de éxito de un caso individual
+-   n - número de eventos totales que se desean medir
+-   k - número de eventos que ha salido SI.
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$): $$
+\mu=n·p \qquad \sigma^2=n·p·(1-p)
+$$
+
+**Combinatoria**
+
+Para entender como se comporta una distribución binomial primero tenemos
+que entender un poco como funciona la combinatoria.
+
+Queremos saber el número de formas diferentes que hay de obtener, sin
+tener en cuena el orden, de que $k$ objetos puedan ser elegidos dentro
+de un conjunto de $n$ objetos. Es decir, el número de subconjuntos de
+$k$-elementos que se pueden obtener de un conjunto de $n$ elementos.
+
+**Ejemplo**: Si tenemos 3 monedas diferentes, ¿cuantas formas posibles
+hay de agruparlas en grupos de dos?
+
+|    .     |    .     |    .     |
+|:--------:|:--------:|:--------:|
+|    .     | Moneda 2 | Moneda 3 |
+| Moneda 1 |    .     | Moneda 3 |
+| Moneda 1 | Moneda 2 |          |
+
+El resultado es 3, hay 3 formas posibles de combinar 3 monedas
+diferentes en grupos de 2.
+
+Este calculo se puede realizar con el **coeficiente binomial**:
+$\binom{n}{k}=\frac{n!}{k!(n-k)!}$
+
+Para nuestro ejemplo:
+$\binom{3}{2}=\frac{3!}{2!(3-2)!}=\frac{3·2·1}{2·1·1!}=3$
+
+**Función de densidad de probabilidad**
+
+Si tenemos $n$ sucesos independientes que siguen una distribución de
+Bernoulli, ¿cual es la probabilidad de que $k$ sucesos sean positivos?.
+Si sabemos que la probabilidad de un suceso ($k=1$) que sigue una
+distribución Bernoulli viene dada por la función de distribución:
+
+$$ 
+Pr_{Bernoulli}(X=k)=p^k(1-p)^{n-k} \qquad k \in \left\{0,1 \right\}.
+$$
+
+Al tener $k$ sucesos donde $k \in \left\{0,1,2,...,n \right\}$, la
+función será la de Bernoulli multiplicada por el coeficiente binomial
+que acabamos de ver:
+
+$$
+Pr(X=k)=\binom{n}{k}p^k(1-p)^{n-k}
+$$
+
+La función acumulativa será:
+
+$$
+Pr(X \leq k)= \sum_{i=0}^{k-1} \binom{n}{k}p^k(1-p)^{n-k}
+$$
+
+| Función de densidad de probabilidad. [Fuente](https://en.wikipedia.org/wiki/Binomial_distribution) | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![](pics/func_Binomial_Distribution_PDF.png) | ![PDF](pics/func_Binomial_Distribution_CDF.png) |
+
+A medida que $n$ se acerca a $\infty$ y $p$ se acerca a $0$, entonces la
+función de probabilidad de una binomial se acerca a una distribución de
+**Poisson** con media $\lambda=n·p$
+
+### Ejemplo Monedas
+
+Tiramos 3 monedas (no trucadas) al aire, ¿cual es la probabilidad de que
+salgan dos caras?
+
+Si tiramos 3 monedas, los posibles resultados se muestran en la
+siguiente tabla:
+
+| Moneda 1  | Moneda 2  | Moneda 3  |
+|:---------:|:---------:|:---------:|
+|   (ʘ‿ʘ)   |   (ʘ‿ʘ)   |   (ʘ‿ʘ)   |
+|   **X**   | **(ʘ‿ʘ)** | **(ʘ‿ʘ)** |
+| **(ʘ‿ʘ)** |   **X**   | **(ʘ‿ʘ)** |
+|     X     |     X     |   (ʘ‿ʘ)   |
+| **(ʘ‿ʘ)** | **(ʘ‿ʘ)** |   **X**   |
+|     X     |   (ʘ‿ʘ)   |     X     |
+|   (ʘ‿ʘ)   |     X     |     X     |
+|     X     |     X     |     X     |
+
+Al ser la probabilidad de cara igual a la probabilidad de cruz todos los
+resultados son equiprobables. De los 8 resultados posibles solo 3 serían
+válidos, así que la probabilidad es $3/8=0.375$
+
+Si lo resolvemos con la fórmula de la binomial donde $n=3$, $k=2$ y
+$p=0.5$: $$
+Pr(X=2)=\binom{n}{k}p^k(1-p)^{n-k}=\binom{3}{2}0.5^{2}·0.5^{1}=0.375
+$$ Esto mismo se puede calcular en R con la función *dbinom()*
+
+```{r}
+dbinom(x=2,size=3,prob=0.5)
+```
+
+También podemos generar una secuencia de números aleatorios siguiendo
+una distribución binomial con la función *rbinom()*, con la siguiente
+línea simulamos que ocurre, el número de caras que salen, al repetir el
+experimento de las 3 monedas 10 veces.
+
+```{r}
+rbinom(10,size=3,prob=0.5)
+```
+
+### Ejemplo Test embarazo
+
+Un test de embarazo tiene una posiblidad de acierto del 99%. Si Berto
+Romero utiliza su orín para probar 100 tests de embarazo, ¿cual es la
+probabilidad de que al menos un test de embarazo salga positivo?.
+Sabiendo que Berto es un hombre y no puede quedarse embarazado.
+
+Si pinchais en la imagen vereis cómo **NO** se debe hacer esto
+experimentalmente, en el minuto 10.35 Berto lo clarifica.
+
+[![](./pics/BertoRomero.png)](https://www.youtube.com/watch?v=yIOwhfWiHbM)
+
+Esto se resolvería utilizando la función de una binomial.
+
+$$
+Pr(X \geq k)=\sum_{i=k}^n \binom{n}{i}p^i(1-p)^{n-i}
+$$
+
+Donde:
+
+-   n = 100
+-   k = 1 \* p = 0.01
+
+Esto en R se haría:
+
+```{r}
+n=100
+k=1
+p=0.01
+
+dbinom(x=1,size=100,prob=0.01)
+dbinom(x=2,size=100,prob=0.01)
+dbinom(x=3,size=100,prob=0.01)
+dbinom(x=4,size=100,prob=0.01)
+```
+
+```{r}
+probFinal<-0
+for (x in k:n){    
+    probFinal<-probFinal+dbinom(x=x,size=100,prob=0.01)
+}
+print(paste0("La probabilidad de que en ",n," tests de embarazo salga al menos ",
+             k," indicando embarazo, es del ",round(probFinal*100,2),"%"))
+```
+
+Lo cual significa que hay más posibilidades de que al hacer este
+experimento salga algún test de embarazo con un *falso positivo*, es
+decir, que diga que Berto está embarazado. Los tests de embarazo miden
+el nivel de la hormona hCG en la orina, el problema seguramente esté en
+que esta probabilidad de error viene dado porque algunas veces (pocas)
+la presencia de esta hormona en la orina de una mujer no implica que
+esté embarazada. Berto no va a tener esa hormona, lo que indica que la
+probabilidad de que un test de embarazo falle en su caso es mucho menor.
+
+**NOTA**: Esto se podría calcular de forma más fácil asumiendo que
+tenemos $n=100$ sucesos independientes con probabilidad $(1-p)$. La
+probabilidad de que absolutamente todos los tests dieran un resultado
+correcto es de $0.99^{100}=0.366$, con lo que la posibilidad de que al
+menos un test falle es $1-0.366=0.634$. De hecho si en la ecuación de la
+binomial utilizamos $k=0$ la ecuación queda reducida a $Pr=(1-p)^{n}$
+
+¿Nos podemos fiar de este resultado?
+
+Podemos simular el experimento en R y repetirlo 10000 veces para poder
+calcular probabilidades.\
+La función *rbinom(n,size=1,prob=p)* genera un vector de tamaño $n=100$
+donde cada elemento sigue una distribución de Bernouilli ($size=k=1$).
+
+```{r}
+p=0.01
+n=100
+k=1
+experimento <- runif(n,min=0,max=1)<p
+
+experimento
+```
+
+```{r}
+numTestFail<-0
+totalIntentos<-100000
+p=0.01
+n=100
+k=1
+for (i in 1:totalIntentos){
+    #experimento<-rbinom(n,size=1,prob=p)
+    experimento<-runif(n,min=0,max=1)<p
+    numFalsoPositivo<-sum(experimento)
+    if (numFalsoPositivo>=k){
+        numTestFail<-numTestFail+1
+    }
+}
+probFinal=numTestFail/totalIntentos
+print(paste0("La probabilidad de que en ",n," tests de embarazo salga al menos ",
+             k," indicando embarazo, es del ",round(probFinal*100,2),"%"))
+```
+
+## Distribución de Poisson
+
+Tiene su origen en una distribución **binomial** a medida que
+$n \rightarrow \infty$ y $p \rightarrow 0$, manteniendo $\lambda=n·p$
+constante.
+
+Esta distribución expresa la probabilidad de que un número de eventos
+dado ocurra en un intervalo de tiempo (o espacio) fijo si los eventos
+curren con una frecuencia constante y son independientes (no dependen de
+cuando ocurrió el último evento).
+
+Ejemplo: Número de llamadas que cursa una antena de telefonía móvil en
+una franja horaria.
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$):
+$$\mu=\lambda \qquad \sigma^2=\lambda $$
+
+**Función de densidad de probabilidad**
+
+Un evento puede ocurrir $k \in \left\{0,1,2,3,... \right\}$ veces en un
+intervalo de tiempo dado. El número de ventos que ocurre en media se
+define con $\lambda$. La probabilidad de observar $k$ eventos en un
+intervalo viene dado por la ecuación:
+
+$$ Pr(X=k)=\frac{\lambda^k}{k!} e^{-\lambda}$$
+
+| Función de densidad de probabilidad. [Fuente](https://en.wikipedia.org/wiki/Poisson_distribution) | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![](pics/func_Poisson_Distribution_PDF.png) | ![PDF](pics/func_Poisson_Distribution_CDF.png) |
+
+Para valores grandes de $\lambda$, en torno a $\lambda>100$, la
+distribución de Poisson tiende a una gaussiana de media $\mu=\lambda$ y
+desviación típica $\sigma=\sqrt{\lambda}$.
+
+**Ejemplo:** Imaginemos que tenemos un call center que recibe de
+**media** 2 llamadas por minuto.
+
+¿Cual es la probabilidad de que recibamos exactamente 5 llamadas en un
+minuto?
+
+$\lambda=2\text{ llamadas/minuto}$
+
+$Pr(X=5)=\frac{2^{5}}{5!}·e^{-2}$
+
+```{r}
+k=5
+l=2
+print(paste("METODO 1: La probabilidad de recibir exactamente",
+            k,"llamadas en un minuto es:", l^k/factorial(k)*exp(-l)  ))
+print(paste("METODO 2: La probabilidad de recibir exactamente",
+            k,"llamadas en un minuto es:",dpois(k, lambda=l  )))
+```
+
+¿Cual es la probabilidad de que recibamos 5 o más llamadas en un minuto?
+
+$$
+Pr(X \geq k)=\sum_{i=k}^\infty {\frac{\lambda^i}{i!}
+e^{-\lambda}}
+$$
+
+Lo que es equivalente a:
+
+$$
+Pr(X \geq k)=1-\sum\_{i=0}^{k-1} \frac{\lambda^i}{i!} e^{-\lambda}
+$$
+
+```{r}
+k<-5
+l<-2
+
+p<-0
+for (i in k:100){
+   p<-p+dpois(i,l)
+}
+print(paste("METODO 1: La probabilidad de recibir ",k," o más llamdas en un minuto es:",p))
+
+p<-1
+for (i in 0:(k-1)){
+   p<-p-dpois(i,l)
+}
+print(paste("METODO 2: La probabilidad de recibir",k," o más llamdas en un minuto es:",p))
+
+
+p<-1-ppois(k-1,l)
+print(paste("METODO 3: La probabilidad de recibir",k," o más llamdas en un minuto es:",p))
+
+
+```
+
+### Funciones en R
+
+Podemos generar una variable aleatoria que siga una distribución de
+Poisson mediante la función *rpois()*.
+
+Por ejemplo si queremos generar 10000 muestras de varias distribuciones
+de Poisson con medias 2, 4 y 20 basta con ejecutar:
+
+```{r}
+l<-c(2,4,20)
+numSamples<-10000
+myPoissonDataVector<-rpois(numSamples*length(l),l)
+
+length(myPoissonDataVector)
+```
+
+```{r}
+head(rep(l,numSamples),10)
+```
+
+```{r}
+myPoissonDataFrame<-data.frame(val=myPoissonDataVector,lambda=rep(l,numSamples))
+myPoissonDataFrame$lambda<-factor(myPoissonDataFrame$lambda)
+head(myPoissonDataFrame)
+```
+
+```{r}
+require(ggplot2)
+ggplot(data=myPoissonDataFrame, aes(x=val,colour=lambda)) + 
+ geom_histogram(position="dodge",bins=30)+
+ geom_density(bw=1)+
+ geom_vline(xintercept=3.65,color="blue")
+```
+
+Podemos comprobar como una distribución **binomial** a medida que
+$n \rightarrow \infty$ y $p \rightarrow 0$, manteniendo $\lambda=n·p$
+constante converge a una distribución de **Poisson** con media
+$\lambda$.
+
+```{r}
+l<-4
+
+n<-c(5,10,100)
+p<-l/n
+
+numSamples<-10000
+
+myBinomialDataVector<-rbinom(numSamples*length(n),size=n,prob=p)
+
+
+myPoissonDataFrame<-data.frame(val=myBinomialDataVector,n=rep(n,numSamples))
+myPoissonDataFrame$n<-factor(myPoissonDataFrame$n)
+
+require(ggplot2)
+
+ggplot(data=myPoissonDataFrame, aes(x=val,colour=n)) +geom_histogram(position="dodge",bins=30)+
+  stat_function(fun=function(x,...){dpois(round(x),...)*10000},args = list(lambda = l), 
+                  geom="area",color="#a98600",fill="yellow",alpha=0.3)
+```
+
+## Distribución exponencial
+
+Describe el tiempo que transcurre entre dos eventos que siguen una
+distribución de Poisson. Es decir, dado un proceso que produce eventos
+de forma continua e independiente a una tasa constante, el tiempo entre
+dos eventos vendrá dado por una distribución exponencial.
+
+Ejemplo: Tiempo entre dos llamadas consecutivas que llegan a una antena
+de telefonía móvil en una franja horaria.
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$): $$
+\mu=\lambda^{-1} \qquad \sigma^2=^\lambda{-1}
+$$
+
+**Función de densidad de probabilidad**
+
+$$
+f(k;p)= \left\{ 
+\begin{matrix} 
+\lambda e^{-\lambda x} & \text{si  } k \geq 0 \\  
+0 & \text{si  } k<0 
+\end{matrix}
+\right.
+$$
+
+| Función de densidad de probabilidad. [Fuente](https://en.wikipedia.org/wiki/Exponential_distribution) | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![](pics/func_Exponential_Distribution_PDF.png) | ![](pics/func_Exponential_Distribution_CDF.png) |
+
+Para valores grandes de $\lambda$, en torno a $\lambda>100$, la
+distribución de Poisson tiende a una gaussiana de media $\mu=\lambda$ y
+desviación típica $\sigma=\sqrt{\lambda}$.
+
+### Funciones en R
+
+Podemos generar una variable aleatoria que siga una distribución de
+exponencial mediante la función *rexp()*.
+
+Por ejemplo si queremos generar 10000 muestras de varias distribuciones
+exponenciales con medias 2, 4 y 20 basta con ejecutar:
+
+```{r}
+l<-c(2,4,20)
+numSamples<-10000
+myExponentialDataVector<-rexp(numSamples*length(l),l)
+
+
+myExponentialDataFrame<-data.frame(val=myExponentialDataVector,lambda=rep(l,numSamples))
+myExponentialDataFrame$lambda<-factor(myExponentialDataFrame$lambda)
+
+require(ggplot2)
+ggplot(data=myExponentialDataFrame, aes(x=val,colour=lambda)) + 
+ geom_density(bw=0.01, kernel="rectangular")
+```
+
+### Ejemplo.
+
+En un call-center que recibe una media de 20 llamadas cada hora. ¿Cual
+es la probabilidad de que el call-center esté más de 5 min entre dos
+llamadas entrantes?
+
+```{r}
+rate=20
+paste(rate,"llamadas cada hora significa una media de una llamada cada",1/rate*60,"minutos")
+```
+
+```{r}
+est_time=5/60
+paste("La probabilidad de tener que esperar más de",est_time,
+      "horas entre dos llamadas entrantes es de",1-pexp(est_time,rate=rate))
+```
+
+## Distribución Gaussiana
+
+La distribución normal o gaussiana es posiblemente la distribución de
+probabilidad más utilizada. Su importancia radica en el teorema central
+del límite.
+
+Su función de densidad de probabilidad es: $$
+P(x\;|\;\mu ,\sigma )={\frac {1}{\sqrt {2\pi \sigma ^{2}}}}\;e^{-{\frac {(x-\mu )^{2}}{2\sigma ^{2}}}}
+$$
+
+La función acumulativa de probabilidad no tiene una forma explícita: $$
+P(X>x\;|\;\mu ,\sigma )={\frac {1}{\sqrt {2\pi \sigma ^{2}}}}\;\int _{-\infty}^x e^{-{\frac {(t-\mu )^{2}}{2\sigma ^{2}}}} dt
+$$
+
+El Teorema central del límite establece que para distribuciones
+independientes e identicamente distribuidas con media $\mu < \infty$ y
+varianza $0< \sigma^2 < \infty$, la suma de un gran número de variables
+aleatorias se distribuye aproximadamente como una normal.
+
+| Función de densidad de probabilidad. [Fuente](https://en.wikipedia.org/wiki/Normal_distribution) | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![](pics/func_Gaussian_Distribution_PDF.png){width="510"} | ![](pics/func_Gaussian_Distribution_CDF.png){width="345" height="284"} |
+
+### Regla 68-95-99.7
+
+Es una regla para acordarse de la distribución de datos cuando estos
+siguen una distribución gaussiana. Nos dice que porcentaje de datos se
+encuentran separados de la media en una, dos o tres desviaciones
+típicas. Es similar a la desigualdad de Tschebyshev pero más
+restrictiva, al ser solo válida para distribuciones gaussianas:
+
+$$
+\begin{aligned}
+\Pr(\mu -\;\,\sigma \leq X\leq \mu +\;\,\sigma )&\approx 0.6827\\
+\Pr(\mu -2\sigma \leq X\leq \mu +2\sigma )&\approx 0.9545\\
+\Pr(\mu -3\sigma \leq X\leq \mu +3\sigma )&\approx 0.9974
+\end{aligned}
+$$
+
+Histograma variable gaussiana.
+[Fuente](https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule)
+![](pics/regla68-95-99.png)
+
+### Funciones en R
+
+En R tenemos las siguientes funciones:
+
+-   dnorm(x, mean = 0, sd = 1): Da la probabilidad de P(X=x)
+-   pnorm(q, mean = 0, sd = 1): Da la probabilidad acumulada de P(X\<x)
+-   qnorm(p, mean = 0, sd = 1): Devuelve resultados de los percentiles
+    (cuantiles),es decir, da el valor de x tal que P(X\<x)=p
+-   rnorm(n, mean = 0, sd = 1): Genera un vector aleatorio de dimensión
+    n
+
+Donde la media y la destviación típica se definen con los parámetros
+$mean$ y $sd$
+
+La función *qnorm* es la inversa de *pnorm*.
+
+```{r}
+pnorm(2.5,mean=2,sd=1)
+```
+
+```{r}
+x<-seq(-5,5,length.out=100)
+plot(x,pnorm(x),t="l",col="blue",ylab="prob")
+lines(x,dnorm(x),t="l",col="red")
+#lines(qnorm(x),x,t="l",col="green")
+
+grid()
+legend("topleft", c("Probabilidad acumulada (pnorm)","Función de probabiliad (dnorm)"), 
+       pch = '-', title = "Gráficas", col=c("blue","red"), y.intersp = 2)
+```
+
+### Efecto de la variación media y varianza
+
+Gráfico elaborado por el IPCC en 2001, hace casi dos décadas, en el que
+ya se describía cómo aumentaría la frecuencia de olas de calor al
+aumentar la temperatura media. Muestra el efecto en temperaturas
+extremas cuando (a) aumenta la temperatura media, (b) aumenta la
+varianza y (c) cuando la media y la varianza aumentan para una
+distribución normal de la temperatura. Fuente:
+http://www.aemet.es/es/noticias/2019/07/Olas_de_calor_mas_intensas_y_frecuentes
+
+![](pics/Curvaipcc.jpg)
+
+### Operaciones con gaussianas
+
+Sumar una constante a una variable aleatoria gaussiana modifica su media
+en la misma medida.
+
+Multiplicar una constante a una variable aleatoria gaussiana cambia su
+media y desviación típica por el mismo factor.
+
+```{r}
+x<-rnorm(100000, mean = 4, sd = 2)
+print(paste0("Tenemos una variable aleatoria gausiana de media: ",
+             mean(x)," y desviación típica:",sd(x)))
+```
+
+```{r}
+nm<-6
+x<-x+nm
+print(paste0("Si le sumamos ",nm," su nueva media será: ",mean(x)," y desviación típica:",sd(x)))
+```
+
+```{r}
+nsd<-10
+x<-rnorm(100000, mean = 4, sd = 2)
+
+x<-x*nsd
+print(paste0("Si la multiplicamos por ",nsd,
+             " su nueva media será: ",mean(x)," y desviación típica:",sd(x)))
+```
+
+### Comprobación teorema centrál del límite
+
+En el siguiente ejemplo vamos a crear vectores de 10.000 entradas que
+sigan una distribución uniforme entre -1 y 1. Posteriormente vamos a
+sumar los vectores entre sí y representar la función de densidad.
+Cuantos más vectores de distribución uniforme sumemos, la curva tiende
+más a una gaussiana.
+
+```{r}
+data.frame(val=as.numeric(),numFunctions=as.numeric())
+```
+
+```{r}
+numSamples<-1000
+
+myRandomDataFrame<-data.frame(val=as.numeric(),numFunctions=as.numeric())
+for (numFunctions in c(1,10,100)){
+    myRandomVector<-rep(0,numSamples)
+    for (i in 1:numFunctions){
+        myRandomVector<-myRandomVector+runif(numSamples,min = -1,max = 1)
+    }
+    myRandomVector<-myRandomVector
+    myRandomDataFrame<-rbind(myRandomDataFrame,data.frame(val=myRandomVector,numFunctions=numFunctions))
+}
+
+myRandomDataFrame$numFunctions<-as.factor(myRandomDataFrame$numFunctions)
+sd10<-sd(myRandomDataFrame$val[myRandomDataFrame$numFunctions==10])
+
+paste("Desviación típica sumando 10 uniformes:",sd10)
+paste("Desviación típica sumando 100 uniformes:",sd(myRandomDataFrame$val[myRandomDataFrame$numFunctions==100]))
+require(ggplot2)
+ggplot(data=myRandomDataFrame, aes(x=val,color=numFunctions)) + 
+    #geom_density(kernel="rectangular",bw=0.07)
+    stat_function(fun=dnorm,args = list(mean = 0, sd=sd10), 
+                  geom="area",color="#a98600",fill="yellow",alpha=0.3)+
+    geom_density(kernel="rectangular")
+    
+```
+
+### Unidad tipificada (Z-score)
+
+Es el número de desviaciones típicas sobre la media en el cual se
+encuentra el valor seleccionado. $$
+z=\frac{x-\mu}{\sigma}
+$$
+
+### Función Q(z)
+
+La función Q(z) es la probabilidad de que una variable aleatoria
+gaussiana obtenga un valor mayor que x desviaciones típicas por encima
+de la media. $$
+Q(z)=P(X >z)=P \left( X  >\frac{x-\mu}{\sigma} \right)
+$$ Si suponemos media 0: $$
+Q(z)=P(X >z)=P \left( \sigma X > x \right)
+$$
+
+| x - desviaciones $\sigma$ | Q(x) - probabilidad |
+|:-------------------------:|:-------------------:|
+|         $-\infty$         |          1          |
+|            -2             |      0.9772499      |
+|            -1             |      0.8413447      |
+|             0             |         0.5         |
+|             1             |      0.1586533      |
+|             2             |     0.02275013      |
+|         $\infty$          |          0          |
+
+```{r}
+print("En R se calcula con pnorm:")
+pnorm(1,lower.tail = F)
+
+print("La inversa se calcula con qnorm:")
+qnorm(0.158655,lower.tail = F)
+```
+
+```{r}
+require(ggplot2)
+options(repr.plot.height=4,repr.plot.width=6)
+plot_qz<-function(l1,l2){ 
+    qnorm1sd<-function(x){
+        out<-dnorm(x)
+        out[x< l1]<-NA
+        out
+    }
+
+    qnorm05sd<-function(x){
+        out<-dnorm(x)
+        out[x<l2]<-NA
+        out
+    }
+
+
+    qval1<-round(pnorm(l1,lower.tail = F),3)
+    qval2<-round(pnorm(l2,lower.tail = F),3)
+
+
+    xdf<-data.frame(z=c(-4,4))
+    ggplot(xdf,aes(x=z))+stat_function(fun=dnorm,args = list(mean = 0, sd=1))+
+      stat_function(fun=qnorm1sd, geom="area",fill="red")+
+      geom_text(x=l1+1,y=dnorm(l1),size=4,label=paste0("Q(",l1,")=",qval1))+ 
+      stat_function(fun=qnorm05sd, geom="area",fill="green",alpha=0.2)+
+      geom_text(x=l2+1,y=dnorm(l2),size=4,label=paste0("Q(",l2,")=",qval2))
+}
+```
+
+```{r}
+l1<-1.96
+l2<- -1.28
+plot_qz(l1,l2)
+```
+
+## Gráfico Q-Q
+
+El grafico Q-Q se utiliza para comparar dos distribuciones pintando sus
+percentiles una contra la otra, generalmente se utiliza para comparar si
+una variable sigue una distribución gausiana.
+
+```{r}
+x<-seq(-4,4,length.out=1000)
+plot(x,pnorm(x,lower.tail = F),t="l",ylab="Q(x) - probabilidad",xlab="x - número de desviaciones típicas sobre la media")
+grid()
+# Es equivalente a:
+plot(x,1-pnorm(x),t="l")
+```
+
+```{r}
+numSamples<-10
+#Empezamos con una variable aleatoria ordenada
+var_random <-sort(runif(numSamples,min=-5,max=5))
+
+#calculamos su probabilidad de que P(X>x)
+p = ((numSamples-1):0)/numSamples
+
+#Basandonos en esta probabilidad, calculamos cual sería su valor si fuera gaussiana
+z<-qnorm(p,lower.tail = F)
+
+matrix(c(var_random,p,z),nrow=3,byrow = T,
+       dimnames=list(c("x","P(X>x) o Q(x)","valor esperado de x si fuera gaussiana"),NULL))
+```
+
+```{r}
+#plot(p,var_random)
+```
+
+```{r}
+#El gráfico QQ sería:
+
+numSamples<-1000
+var_random <-sort(runif(numSamples,0,10))
+p = ((numSamples-1):0)/numSamples
+z<-qnorm(p,lower.tail = F)
+
+
+
+plot(z,var_random,
+     xlab="número de desviaciones típicas sobre la media teórica",
+     ylab="valores reales")
+```
+
+Evidentemente el gráfico Q-Q de una variable gaussiana es una linea
+recta
+
+```{r}
+numSamples<-1000
+gauss_random <-sort(rnorm(numSamples,mean=5,sd=3))
+p = ((numSamples-1):0)/numSamples
+z<-qnorm(p,lower.tail = F)
+plot(z,gauss_random,
+     xlab="número de desviaciones típicas sobre la media teoórica",
+     ylab="valores reales")
+```
+
+Existe una función para hacer esto mismo
+
+```{r}
+qqnorm(gauss_random)
+qqline(gauss_random, col = 'orange', lwd =2)
+```
+
+```{r}
+unif1<-subset(myRandomDataFrame,numFunctions==1)$val
+qqnorm(unif1)
+qqline(unif1, col = 'orange', lwd =2)
+```
+
+## Distribución chi-cuadrado
+
+La función de distribución chi-cuadrado con $k$ grados de libertad
+aparece de sumar el cuadrado de $k$ variables que siguen gausianas
+independientes. Es usada principalmente para los tests estadísticos.
+
+Su función de distribución es:
+
+$$
+f(x;k)=\begin{cases}{\dfrac {x^{{\frac {k}{2}}-1}e^{-{\frac {x}{2}}}}{2^{\frac {k}{2}}\Gamma \left({\frac {k}{2}}\right)}},&x>0;\\0,&{\text{en otro caso}}\end{cases}
+$$
+
+| Función de densidad de probabilidad. [Fuente](https://es.wikipedia.org/wiki/Distribuci%C3%B3n_%CF%87%C2%B2) | Función acumulativa de probabilidad |
+|:--:|:--:|
+| ![](pics/func_Chisq_Distribution_PDF.png) | ![](pics/func_Chisq_Distribution_CDF.png) |
+
+Funciones en R
+
+En R tenemos las siguientes funciones:
+
+-   dchisq(x, df, ncp = 0): Da la probabilidad de P(X=x)
+-   pchisq(q, df, ncp = 0): Da la probabilidad de P(X\<x)
+-   qchisq(p, df, ncp = 0): Devuelve resultados de los percentiles
+    (cuantiles),es decir, da el valor de x tal que P(X\>x)=p
+-   rchisq(n, df, ncp = 0): Genera un vector aleatorio de dimensión n
+
+Donde df es el número de grados de libertad
+
+## Distribución t-student
+
+Aparece de muestrear una distribución gausiana. Al tomar N muestras de
+una distribución gaussiana, la media normalizada (z-score) sigue una
+distribucíon t-student con N-1 grados de libertad.
+
+Fue descubierta por W. S. Gossett mientras trabajaba en pruebas de
+calidad para la fábrica Guinness en Dublín.
+
+Funciones en R
+
+En R tenemos las siguientes funciones:
+
+-   dt(x, df, ncp = 0): Da la probabilidad de P(X=x)
+-   pt(q, df, ncp = 0): Da la probabilidad de P(X\<x)
+-   qt(p, df, ncp = 0): Devuelve resultados de los percentiles
+    (cuantiles),es decir, da el valor de x tal que P(X\>x)=p
+-   rt(n, df, ncp = 0): Genera un vector aleatorio de dimensión n
+
+Donde df es el número de grados de libertad
+
+```{r}
+library(ggplot2)
+options(repr.plot.height=4,repr.plot.width=6)
+pick_N_samples<-function(N){
+    rnorm(N,m=real_mu,sd=real_sd)
+}
+
+N<-3
+real_mu<-5
+real_sd<-2
+tstudent<-data.frame(rep(NA,10000))
+
+for (i in 1:nrow(tstudent)){
+    g<-pick_N_samples(N)
+    estimated_sd<-sd(g)/sqrt(N)
+    estimated_mean<-mean(g)
+    tstudent[i,"val"]<-(estimated_mean-real_mu)/estimated_sd
+}
+
+ggplot(data=tstudent, aes(x=val)) + 
+    stat_function(fun=dnorm,args = list(mean = 0, sd=1), geom="area",color="#a98600",fill="yellow",alpha=0.3)+
+    stat_function(fun=dt,args = list(df = N-1),color="#2222BB")+
+    xlim(-5,5)+
+    geom_density(kernel="rectangular")
+```
+
+Podemos comparar en un diagrama Q-Q como la t-student presenta una cola
+mayor:
+
+```{r}
+qqnorm(tstudent$val,ylim = c(-5,5))
+qqline(tstudent$val, col = 'orange', lwd =2)
+```
+
+### Distribución Beta
+
+La función Beta se utiliza mucho en análisis de bayes con test A/B.
+Tiene la particularidad de ser el [*conjugado
+prior*](https://en.wikipedia.org/wiki/Conjugate_prior) de las funciones
+Bernoulli y Binomial (más adelante veremos que significa esto).
+
+La fórmula de su densidad de probabilidad recuerda mucho a la de
+Binomial. Recordemos la formula de la función de distribución de
+Binomial: \[ Pr(X=k)=\binom{n}{k}p^k(1-p)^{n-k} \]
+
+La función de densidad de probabilidad de la función beta es: $$
+pdf(p)= \frac{p^{\alpha-1}(1-p)^{\beta-1}}{B(\alpha,\beta)}
+$$
+
+Donde: $$
+B(\alpha,\beta)=\int_0^1 p^{\alpha-1}(1-p)^{\beta-1} dx
+$$
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$): $$
+\mu=
+\frac{\alpha}{\alpha + \beta} \qquad \sigma\^2=
+\frac{\alpha \beta}{(\alpha+\beta)^2(\alpha+\beta+1)} 
+$$
+
+La moda sería: $$
+moda = \frac{\alpha-1}{\alpha + \beta -2}
+$$
+
+Podemos pensar en
+
+-   α-1 como el número de éxitos
+-   β-1 como el número de fallos
+
+```{r}
+a<-4+1
+b<-8+1
+x<-seq(0,1,length.out=1000)
+plot(x,dbeta(x,a,b),t="l")
+```

@@ -1,0 +1,239 @@
+---
+format: html
+editor: visual
+  markdown: 
+    wrap: 72
+---
+
+# Gestión de paquetes
+
+En R hay multitud de paquetes que pueden ampliar su funcionalidad con nuevas funciones. Existe un repositorio oficial en [CRAN](https://cran.r-project.org/web/packages/index.html)
+
+R permite gestionar los paquetes mediante los comandos:
+
+-   install.packages(pkgs, respos): Instala nuevos paquetes.
+-   installed.packages(): Muestra los paquetes instalados.
+-   remove.packages(pkgs) : Borra los paquetes indicados.
+-   library(pkg) : Carga en memoria el paquete indicado.
+
+# Gráficos
+
+Ya hemos visto como realizar gráficos con *plot*. Existe una librería más completa llamada ggplot2.
+
+```{r}
+# instalación
+#install.packages(c('ggplot2'), repos='https://cran.rstudio.com/')
+```
+
+```{r}
+library("ggplot2")
+```
+
+#### Ejemplo de gráficas
+
+Primero creamos el dataframe
+
+```{r}
+valX <- seq(-5,5, by=0.5)
+valY <- valX + valX^2 + valX^3
+
+mydf <- data.frame(dfx=valX, dfy=valY)
+head(mydf)
+```
+
+```{r}
+#ggplot crea un objeto para representar gráficos
+#geom_line crea una linea sobre el objeto ggplot
+#geom_point muestra los puntos sobre el objeto ggplot
+#El objeto aes, indica que columnas vamos a usar para las coordenadas X e Y
+
+ggplot(data=mydf, aes(x=dfx, y=dfy))+geom_point(color="#FABADA", size=10)+geom_line(color="darkblue")
+```
+
+```{r}
+mydf$type <- "función 1"
+mydf2 <- data.frame(dfx=valX, dfy=1+2*valX+3*valX^2, type="función 2")
+mydf2 <- rbind(mydf, mydf2)
+mydf2$type <- as.factor(mydf2$type)
+head(mydf2)
+```
+
+```{r}
+mydf2[sort(sample(1:nrow(mydf2), 5)),]
+```
+
+```{r}
+summary(mydf2)
+```
+
+```{r}
+g <- ggplot(data=mydf2,aes(x=dfx,y=dfy,color=type))
+```
+
+```{r}
+summary(g)
+```
+
+```{r}
+g<-g+geom_line()+geom_point()
+```
+
+```{r}
+summary(g)
+```
+
+```{r}
+g
+```
+
+R tiene varios datasets incorporados. En este caso vamos a usar el dataset de iris.
+
+Este conjunto de datos de iris da medidas en centímetros de las variables longitud y anchura del sépalo, y de los pétalos, para 50 flores de cada una de las 3 especies de iris. Las especies son *Iris setosa*, *versicolor* y *virginica*. ![](https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kosaciec_szczecinkowaty_Iris_setosa.jpg/220px-Kosaciec_szczecinkowaty_Iris_setosa.jpg)
+
+```{r}
+summary(iris)
+```
+
+```{r}
+iris[sample(1:nrow(iris),5),]
+```
+
+```{r fig.height=4, fig.width=7}
+ggplot(data=iris,aes(x=Species, y=Sepal.Length,color=Species))+geom_boxplot()+
+   scale_color_discrete(name="Especie")+  xlab('Especies')+ylab('Longitud sépalo')+
+  ggtitle("Boxplot del sépalo", subtitle = "Para las 3 especies")
+```
+
+```{r}
+ggplot(data=iris,aes(x=Petal.Width, y =Petal.Length, color=Species, shape=Species))+
+  #geom_jitter(size=3)+
+  geom_point()+
+  scale_color_discrete("Especies")+
+  scale_shape_discrete("Especies")+
+  theme_bw()+ xlab("Anchura del sépalo")+ylab("Longitud del sépalo")+
+  ggtitle("Comparación del ancho y longitud del sépalo")
+```
+
+### Ejemplo con los seguros de coche
+
+Partimos del dataset de automóviles y seguros que podemos descargar de:
+
+https://archive.ics.uci.edu/ml/datasets/Automobile
+
+Al igual que usamos en el capítulo 1.
+
+```{r}
+autos<-read.csv("data//imports-85.data", col.names = c("risk", "normalized_losses", 
+                                                         "make", "fuel_type", "aspiration",
+           "num_doors", "body_style", "drive_wheels", "engine_location",
+           "wheel_base", "length", "width", "height", "curb_weight",
+           "engine_type", "num_cylinders", "engine_size", "fuel_system",
+           "bore", "stroke", "compression_ratio", "horsepower", "peak_rpm",
+           "city_mpg", "highway_mpg", "price"))
+```
+
+```{r}
+ggplot(data=autos, aes(x=length, y=width, size=height))+
+ geom_point(alpha=0.1)+
+ scale_size_continuous(name="Altura")+
+ xlab("Longitud del coche")+
+ ylab("Ancho del coche")
+```
+
+Recomendada la visualización de Hans Rosling: https://www.ted.com/talks/hans_rosling_shows_the_best_stats_you_ve_ever_seen
+
+```{r}
+ggplot(data=autos, aes(x=body_style, y=length, color=body_style))+geom_boxplot()
+```
+
+```{r}
+unique(autos$body_style)
+```
+
+## Ejemplo con las estrellas
+
+Se denomina [secuencia principal](https://es.wikipedia.org/wiki/Secuencia_principal) a la región del diagrama de Hertzsprung-Russell en la que se encuentran la mayor parte de las estrellas. Es una banda continua y distintiva de estrellas que aparece en las parcelas de color estelar versus brillo. Las estrellas en esta banda son conocidas como estrellas de secuencia principal o estrellas enanas. Por esta razón, estas estrellas son llamadas de secuencia principal. La secuencia principal termina entre las estrellas más frías de esta banda o curva que son las enanas rojas, de masa baja y comienza entre las bandas de las estrellas que se ubican hacia las altas temperaturas que son las supermasivas gigantes azules. El diagrama H-R es un diagrama estadístico que muestra la temperatura efectiva de las estrellas en función de su luminosidad. Otras regiones del diagrama están ocupadas por estrellas gigantes de corta vida y evolución rápida o por enanas blancas muy estables.\*
+
+```{r}
+# install.packages("dslabs")
+library("dslabs")
+data(stars)
+head(stars)
+```
+
+```{r}
+
+ggplot(stars, aes(x=temp, y=magnitude, color=temp))+
+  geom_point()+
+  scale_color_gradientn(colors = rainbow(5, rev=FALSE))+
+  theme_bw()+
+  scale_x_reverse()+scale_y_reverse()+
+  scale_x_log10()+
+  ggtitle("Diagrama HR")
+```
+
+## COVID-19
+
+Vamos a descargarnos los datos del repositorio de la universidad Johns Hopkins donde se almacena la cantidad de casos acumulados de COVID
+
+```{r}
+covid_url<-'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+
+df<-read.csv(url(covid_url))
+head(df)
+```
+
+```{r}
+df$Lat<-NULL
+df$Long<-NULL
+head(df)
+```
+
+```{r}
+library(reshape2)
+df_cov<-melt(df,id.vars=c("Province.State","Country.Region"))
+tail(df_cov)
+dim(df_cov)
+```
+
+```{r}
+df_cov$fecha<-as.POSIXct(df_cov$variable, format='X%m.%d.%y')
+head(df_cov)
+```
+
+```{r}
+#df_country<-df_cov[df_cov$Country.Region=="Spain" | df_cov$Country.Region=="Italy",]
+df_country<-df_cov[df_cov$Country.Region %in% c("Spain", "Italy"),]
+tail(df_country)
+```
+
+```{r}
+ggplot(df_country[1:100,], aes(x=fecha, y=value))+
+  geom_point(size=0.5)+
+  geom_line(aes(color=Country.Region))
+```
+
+```{r}
+ggplot(df_country[df_country$fecha<'2021-01-01',], 
+       aes(x=fecha, y=value, color=Country.Region))+geom_line()
+```
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+df_country |> mutate(year=year(fecha)) |> group_by(year, country=Country.Region) |> summarise(value=max(value)) -> df_country_year
+
+ggplot(df_country_year, aes(x=year, color=country, fill=country, group=country)) +
+  geom_col(aes(y=value), position = 'dodge')+
+  ylab('Número de casos')+xlab('Año')+
+  geom_label( aes(y=value, label=paste(round(value/1000),'k'), sep=''), fill='white', color='black',
+             position=position_dodge(width=1))+
+  ggtitle("Numero de casos covid")+
+  geom_text(aes(x=2020,y=2e7), color='red',  label="Diagrama barras")
+
+```
+
+```{r}
+ggplot(df_country, aes(x=fecha, y=value, color=Country.Region))+geom_line()
+```
