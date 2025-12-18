@@ -1,0 +1,60 @@
+---
+title: "Respaso_dia1"
+format: html
+editor: visual
+---
+
+## Quarto
+
+```{r}
+df=read.csv('data/Accidentes_Madrid.csv')
+```
+
+
+Seleccionamos las columnas de interés
+```{r}
+df_acc <-df[,c(1,seq(2,17, by=2))]
+```
+
+Modificamos el nombre de las columnas:
+```{r}
+colnames(df_acc) <- c('distrito',seq(2016, 2009, by=-1))
+df_acc_ok<-df_acc[-1, ]
+
+df_acc_ok$distrito <- trimws(df_acc_ok$distrito) #Elimina los espacios
+df_acc_ok$`2016` <- as.numeric(df_acc_ok$`2016`)
+df_acc_ok$`2015` <- as.numeric(df_acc_ok[,"2015"])
+df_acc_ok$`2014` <- as.numeric(df_acc_ok[,"2014"])
+```
+
+
+Mostramos todos los distritos:
+```{r}
+df_acc_ok[,"distrito"]
+``` 
+
+
+Buscamos los accidentes en tetuan
+```{r}
+df_acc_ok[df_acc_ok[,"distrito"]=='TETUAN',]
+```
+
+
+Mostrar todos los distritos con más accidentes que Tetuan en 2016
+
+```{r}
+num_acc<-df_acc_ok[df_acc_ok[,"distrito"]=='TETUAN',"2016"]
+paste(df_acc_ok[which(df_acc_ok[,'2016']>num_acc), "distrito"], collapse=', ')
+```
+
+
+
+Mostrar todos los distritos con más accidentes que Tetuan en 2016
+y más  accidentes en 2015
+```{r}
+num_acc2016<-df_acc_ok[df_acc_ok[,"distrito"]=='TETUAN',"2016"]
+num_acc2015<-df_acc_ok[df_acc_ok[,"distrito"]=='TETUAN',"2015"]
+paste(df_acc_ok[which(df_acc_ok[,'2016']>num_acc2016 & df_acc_ok[,'2015']>num_acc2015), "distrito"], collapse=', ')
+```
+
+
