@@ -1,0 +1,138 @@
+---
+title: "Ejercicios1"
+format: html
+editor: visual
+---
+
+## Peso al nacer
+
+Leer el dataset que se encuentra en data/birthweight_reduced.csv.
+
+```{r}
+bwt <- read.csv("./data/birthweight_reduced.csv")
+head(bwt)
+```
+
+Convertir la columna smoker en un factor con los valores: 1- 'YES' 0- 'NO'
+
+```{r}
+library(tidyverse)
+#bwt$smoker <- factor(bwt$smoker, labels=c('NO','YES'))
+bwt |> mutate(smoker=factor(smoker, labels=c('NO','YES'))) -> bwt
+```
+
+Para la columna Birthweight:
+
+1- Calcular media, mediana y los cuartiles
+
+```{r}
+summary(bwt$Birthweight)
+```
+
+```{r}
+
+```
+
+2- Dibujar un Boxplot. Y decir cuales son los outliers, y ver si veis alguna caracteristica importante.
+
+```{r}
+ggplot(bwt, aes(y=Birthweight))+geom_boxplot(color='red')
+```
+
+3-¿Cuantas madres fumadoras y no fumadoras hay?
+
+```{r}
+bwt |> group_by(smoker) |> summarise(num=n())
+#table(bwt$smoker)
+#summary(bwt$smoker)
+```
+
+4- ¿Cual es el peso medio de los niños al nacer para las madres fumadoras y no fumadoras?
+
+```{r}
+
+```
+
+5- ¿Cual de los dos grupos presenta una varianza mayor?
+
+```{r}
+
+```
+
+6- Pinta un Boxplot del peso para cada uno de los grupos
+
+```{r}
+
+
+```
+
+## Ciudades soleadas
+
+Vamos a leer el dataset cities_sunny. Muestra las horas de sol medias que tienen diferentes ciudades en un mes determinado.
+
+```{r}
+df_sunny <- read.csv("./data/cities_sunny.csv")
+head(df_sunny)
+```
+
+1- ¿Cuantos paises hay? ¿Cuantas Ciudades?
+
+```{r}
+
+
+```
+
+Nombre de la Ciudad que aparece en más de un país
+
+```{r}
+
+
+```
+
+Numero de ciudades por pais. Hay tantas filas como paises:
+
+```{r}
+
+
+```
+
+Numero de ciudades:
+
+```{r}
+
+
+```
+
+2- ¿Cual es la ciudad que más horas de sol tiene en enero?
+
+```{r}
+
+
+```
+
+3- ¿Cual es la ciudad que más horas de sol totales tiene en los meses de Enero, Febrero y Marzo? (suma los 3 meses y encuentra la ciudad con el máximo)
+
+```{r}
+
+
+
+```
+
+4- ¿Cual es la ciudad que más horas de sol tiene en todo el año? (sumando todos los meses)
+
+```{r}
+
+```
+
+5- En el dataset, ¿cual es el país que tiene más ciudades?. Muestra el número medio de horas mensuales en enero para las ciudades de ese país.
+
+```{r}
+
+```
+
+6- ¿Cual es el número medio de horas soleadas al mes en Madrid? ¿y su mediana?
+
+```{r}
+
+
+```
