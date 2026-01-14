@@ -1,0 +1,1900 @@
+---
+function: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Tipos de error
+
+En estadística a veces se realizan hipótesis que pueden ser ciertas o
+falsas con cierto grado de confianza.
+
+Partimos de dos hipótesis:
+
+-   Hipótesis nula, $H_0$: Es la hipótesis original, la que generalmente
+    intentamos probar o desmentir.
+-   Hipótesis alternativa, $H_1$: Es la hipótesis que tenemos que
+    aceptar cuando $H_0$ se demuestra falsa.
+
+**Ejemplos de hipótesis:**
+
+Sobre la altura de las personas.
+
+-   $H_0$: La media de la altura en España es 1.80m.
+
+-   $H_1$: La media de la altura en España NO es 1.80m.
+
+Sobre el color de los perros:
+
+-   $H_0$: Todos los perros son verdes.
+
+-   $H_1$: Algún perro no es verde.
+
+Sobre pruebas médicas:
+
+-   $H_0$: No está embarazada.
+
+-   $H_1$: Sí está embarazada.
+
+Si nuestro test estadístico dice que la hipótesis $H_1$ es cierta pero
+en realidad la que es cierta es la hipótesis $H_0$ estaremos cometiendo
+un error. El tipo de error depende de si nos hemos equivocado
+prediciendo $H_0$ o $H_1$.
+
+| .              | $H_0$ cierta                 | $H_1$ cierta                  |
+|----------------|------------------------------|-------------------------------|
+| Elegimos $H_0$ | No hay error                 | Error tipo II, falso negativo |
+| Elegimos $H_1$ | Error tipo I, falso positivo | No hay error                  |
+
+| . | $H_0$ cierta | $H_1$ cierta |
+|----|----|----|
+| Elegimos $H_0$ | ![](pics/homerFat.jpg) No hay error | ![](pics/MargeError.png) Error tipo II, falso negativo |
+| Elegimos $H_1$ | ![](pics/homerError.jpg) Error tipo I, falso positivo | ![](pics/MargePregnant.png) No hay error |
+
+### p-valor
+
+En los tests estadísticos trataremos de confirmar o desmentir la
+hipótesis nula $H_0$ mediante un valor de confianza llamado p-valor.
+
+El p-valor es la probabilidad de que dado un modelo,la probabilidad de
+nuestros datos encajen en ese modelo. Es decir, es:
+
+$$
+P(X \mid \theta)
+$$
+
+No confundir con:
+
+$$
+P(\theta \mid X)
+$$
+
+Que es la probabilidad de que, dadas las muestras $X$, nuestro modelo
+sea $\theta$.
+
+### Tipos de tests
+
+Se pueden realizar diferentes suposiciones sobre la distribución de
+probabilidad que siguen los datos en cuestión.
+
+-   Las pruebas **paramétricas** son aquellas pruebas estadísticas que
+    suponen que los datos siguen aproximadamente una distribución
+    normal, entre otros supuestos (los ejemplos incluyen la prueba z, la
+    prueba t y el ANOVA). Nota importante: el supuesto es que los datos
+    de toda la población siguen una distribución normal, no los datos de
+    la muestra con la que se trabaja.
+-   Las pruebas **no paramétricas** son aquellas pruebas estadísticas
+    que no asumen nada sobre la distribución que siguen los datos, y por
+    ello también se conocen como pruebas sin distribución (ejemplos:
+    Chi-cuadrado, U de Mann-Whitney). Las pruebas no paramétricas se
+    basan en los rangos que tienen los distintos puntos de datos.
+
+Cada prueba paramétrica tiene un equivalente no paramétrico, lo que
+significa que para cada tipo de problema que tengas habrá una prueba en
+ambas categorías para ayudarte.
+
+### Dirección de la prueba
+
+Un test puede ser unilateral o bilateral, en función de los resultados
+que queramos medir
+
+# Comparando dos grupos de datos cuantitavos
+
+## Medias de dos grupos
+
+Tenemos dos grupos de datos y quieres saber si la media de ambos grupos
+es igual o no. Tenemos dos hipótesis: $$H_0 : \mu(X) = \mu(Y) $$
+$$H_1 : \mu(X) \ne \mu(Y) $$
+
+```{r}
+set.seed(123)
+#nx<-10
+#ny<-15
+nx<-5
+ny<-7
+
+X<-rnorm(nx,mean=7,sd=3)
+Y<-rnorm(ny,mean=5,sd=3)
+
+paste("Vector X:",paste(round(X,2),collapse=","))
+paste("Vector Y:",paste(round(Y,2),collapse=","))
+
+t_orig1<-mean(X)-mean(Y)
+t_orig2<-mean(Y)-mean(X)
+paste("La diferencia de medias es:",t_orig1,",",t_orig2)
+```
+
+¿Cual es la probabilidad de que recombinando los valores de las
+variables X e Y la diferencia de las medias sea superior a la original?
+
+```{r}
+perm_func <- function(x1, x2){
+    x<-c(x1,x2)
+    n<-length(x)
+    
+    idx1<-sample(1:n,length(x1))
+    #idx2<-setdiff(1:n,idx1)
+    list(x1=x[idx1],x2=x[-idx1])
+}
+```
+
+```{r}
+mn<-c()
+num_out_X1_larger_X2<-0
+num_out_X2_larger_X1<-0
+total_trials<-10000
+
+for (i in 1:total_trials){
+    plist<-perm_func(X,Y)
+    x1<-plist$x1
+    x2<-plist$x2
+    
+    t<-mean(x1)-mean(x2)
+    mn<-c(mn,t)
+    
+    if (t>t_orig1){
+        num_out_X1_larger_X2<-num_out_X1_larger_X2+1
+    }
+    if (t< t_orig2){
+        num_out_X2_larger_X1<-num_out_X2_larger_X1+1
+    }
+}
+paste("La probabilidad de que por puro azar E[X] - E[Y] sea mayor de",t_orig1,":",num_out_X1_larger_X2/total_trials)
+paste("La probabilidad de que por puro azar E[Y] - E[X] sea menor de",t_orig2,":",num_out_X2_larger_X1/total_trials)
+paste("La probabilidad de que E[X] != E[Y]:",(num_out_X2_larger_X1+num_out_X1_larger_X2)/total_trials)
+```
+
+```{r}
+options(repr.plot.height=2,repr.plot.width=4, repr.plot.res = 300)
+library(ggplot2)
+ggplot(data.frame(x=mn),aes(x=x))+geom_density()+
+    stat_function(fun=dnorm,args = list(mean=0,sd=sd(mn)),color="red")+
+    geom_vline(xintercept = t_orig1,color="blue")+
+    geom_vline(xintercept = t_orig2,color="blue")+
+  theme_linedraw()+xlab("mean(x1)-mean(x2)")
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=4, repr.plot.res = 300)
+
+qqnorm(mn,pch='.')
+qqline(mn,col="red")
+abline(h = t_orig1,col="blue")
+abline(h = t_orig2,col="blue")
+```
+
+## T-test de student
+
+El origen de este test se remonta a 1908, a la fábrica de cerveza
+[Guiness](https://www.guinness-storehouse.com/content/pdf/archive-factsheets/general-history/wsgosset-and-students-t-test.pdf).
+
+El t-test es usado cuando tienes dos grupos de datos y quieres saber si
+la media de ambos grupos es igual o no. Tenemos dos hipótesis:
+$$H_0 : \mu(X) = \mu(Y) $$ $$H_1 : \mu(X) \ne \mu(Y) $$
+
+Empezamos con las siguientes suposiciones: 1. Las muestras han sido
+seleccionas por muestreo aleatorio simple dentro de la población. 2. Las
+poblaciones siguen una distribución normal. (sino usar test
+Wilcoxon-Mann-Whitney) 3. Ambas poblaciones tienen la misma varianza.
+(sino usar test Welch) 4. Las poblaciones no están correladas. (sino
+usar t-test emparejado)
+
+Primero calculamos la media y varianza de ambos grupos. El test para
+verificar si la hipótesis nula $H_0$ es cierta puede ser calculado como
+sigue:
+
+$$ t=\frac{E[X]-E[Y]}{s_p·\sqrt{\frac{1}{n_x}+\frac{1}{n_y}}} $$
+
+Donde $s_p$ es la desviación estandar compuesta, calculada como:
+
+$$ s^2_p=\frac{(n_x-1)Var[X]+(n_y-1)Var[Y]}{n_x+n_y-2} $$
+
+Donde $n_x$ y $n_y$ son los números de muestras en cada uno de los
+grupos muestreados. El número de grados de libertad es $d.f.=n_x+n_y-2$.
+Podemos asumir que las dos varianzas son iguales si ambas pasan el test
+de varianza de Fisher(F-test).
+
+```{r}
+sp<-sqrt(((nx-1)*var(X)+(ny-1)*var(Y))/(nx+ny-2))
+t_orig<-(mean(X)-mean(Y))/(sp*sqrt(1/nx+1/ny))
+
+paste("El estimador t-estadístico es:",t_orig)
+```
+
+```{r}
+mn<-c()
+num_out_X1_larger_X2<-0
+num_out_X2_larger_X1<-0
+total_trials<-10000
+for (i in 1:total_trials){
+    plist<-perm_func(X,Y)
+    x1<-plist$x1
+    x2<-plist$x2
+            
+    sp<-sqrt(((nx-1)*var(x1)+(ny-1)*var(x2))/(nx+ny-2))
+    
+    t<-(mean(x1)-mean(x2))/(sp*sqrt(1/nx+1/ny))
+    mn<-c(mn,t)
+    
+    if (t>t_orig){
+        num_out_X1_larger_X2<-num_out_X1_larger_X2+1
+    }
+    if (t< -1*t_orig){
+        num_out_X2_larger_X1<-num_out_X2_larger_X1+1
+    }
+}
+
+paste("La probabilidad de que por puro azar el estimador t sea mayor de",t_orig,":",num_out_X1_larger_X2/total_trials)
+paste("La probabilidad de que por puro azar el estimador t sea menor de",-1*t_orig,":",num_out_X2_larger_X1/total_trials)
+paste("La probabilidad de que E[X] != E[Y]:",(num_out_X2_larger_X1+num_out_X1_larger_X2)/total_trials)
+```
+
+```{r}
+options(repr.plot.height=2,repr.plot.width=6)
+library(ggplot2)
+ggplot(data.frame(x=mn),aes(x=x))+geom_density()+
+    stat_function(fun=dt,args = list(df = nx+ny-2),color="red")+
+    stat_function(fun=dnorm,args = list(mean=0,sd=sd(mn)),color="green")+
+
+    geom_vline(xintercept = t_orig,color="blue")+
+    geom_vline(xintercept = -1*t_orig,color="blue")+
+  theme_linedraw()+xlab("t=(mean(x1)-mean(x2))/(sp*sqrt(1/nx+1/ny))")+
+   theme(axis.title.x = element_text(size = rel(0.8), angle = 00))
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=4, repr.plot.res = 300)
+
+
+qqnorm(mn,pch='.')
+qqline(mn,col="red")
+abline(h = t_orig,col="blue")
+abline(h = -t_orig,col="blue")
+```
+
+```{r}
+qqplot(x=qt(ppoints(length(mn)),df=nx+ny-2),y=mn,pch='.')
+qqline(mn,col="red")
+abline(h = t_orig,col="blue")
+abline(h = -t_orig,col="blue")
+```
+
+Como vemos, estas la **diferencia de las medias normalizada** de estas
+variables siguen perfectamente una distribución t-student.
+
+```{r}
+library(ggplot2)
+d.f.<-20
+
+loth<-qt(0.025,d.f.,lower.tail = T)
+upth<-qt(0.025,d.f.,lower.tail = F)
+
+paste("El margen que nos interesa está en el rango: [",
+      round(loth,2),",",round(upth,2),"]")
+
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  & x<upth  ]<-NA
+    out
+}
+options(repr.plot.height=3,repr.plot.width=6)
+xdf<-data.frame(z=c(-4,4))
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red")+
+  geom_text(x=3,y=0.1,size=4,label=paste0("t_cdf(",round(upth,2),")=0.975"))+
+  geom_text(x=-3,y=0.1,size=4,label=paste0("t_cdf(",round(loth,2),")=0.025"))+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+### Funciones en R
+
+Supongamos que tenemos dos variables aleatorias X e Y. Queremos saber si
+ambas proceden de la misma población. Una forma de saberlo es calcular
+la media de X e Y. A continuación calcular el test t-student y ver el
+p-valor.
+
+-   Un valor muy **bajo**, por ejemplo inferior a 0.05, nos llevaría a
+    rechazar la hipótesis nula $H_0$ y afirmar que las medias son tan
+    diferentes que probablemente vendrán de poblaciones distintas.
+-   Un p-valor **alto** nos indicaría que la hipótesis $H_0$ es posible
+    que sea cierta.
+
+#### Test bilateral
+
+```{r}
+set.seed(123)
+#nx<-5
+#ny<-7
+nx<-10
+ny<-15
+X<-rnorm(nx,mean=7,sd=3)
+paste("Media X:",mean(X))
+Y<-rnorm(ny,mean=5,sd=3)
+paste("Media Y:",mean(Y))
+data.frame(X=c(X,rep(NA,ny-nx)),Y)
+```
+
+```{r}
+sp<-sqrt(((nx-1)*var(X)+(ny-1)*var(Y))/(nx+ny-2))
+t<-(mean(X)-mean(Y))/(sp*sqrt(1/nx+1/ny))
+paste("El estadístico t vale:",t)
+```
+
+Sabemos que el estadístico t sigue una distribución t student, con lo
+cual, tenemos que averiguar cual es la probabilidad de que haya acabado
+con ese valor.
+
+```{r}
+pvalue<-(1-pt(abs(t),nx+ny-2))*2
+
+print(paste("El pvalor es",pvalue))
+```
+
+Si el p-valor es bajo (menor de 0.05) significa que es bastante
+improbable que las medias de X e Y sean iguales. Por lo tanto en ese
+caso podríamos rechazar la hipótesis nula $H_0$.
+
+El mismo procedimiento lo podemos ejecutar usando la función *t.test*:
+
+```{r}
+t.test(X,Y,var.equal = TRUE)
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+d.f.<-nx+nx-2
+
+loth<-qt(0.025,d.f.,lower.tail = T)
+upth<-qt(0.025,d.f.,lower.tail = F)
+
+paste("El margen que nos llevaría a rechazar la hipótesis nula está fuera del rango: [",
+      round(loth,2),",",round(upth,2),"]")
+
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  & x<upth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> -abs(t)  & x< abs(t)  ]<-NA
+    out
+}
+
+
+options(repr.plot.height=2,repr.plot.width=6)
+xdf<-data.frame(z=c(-4,4))
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.2)+
+  geom_text(x=3,y=0.1,size=4,label=paste0("t_cdf(",round(upth,2),")=0.975"))+
+  geom_text(x=-3,y=0.1,size=4,label=paste0("t_cdf(",round(loth,2),")=0.025"))+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()+xlab("t")+ylab("prob")
+options(repr.plot.height=2,repr.plot.width=7)
+```
+
+El p.valor es la integral de las dos áreas amarillas. Para rechazar la
+hipótesis nula el área debería ser la de las zona roja.
+
+#### Test unilateral (izquierda)
+
+$$H_0 : \mu(X) >= \mu(Y) $$ $$H_1 : \mu(X) < \mu(Y) $$
+
+```{r}
+t.test(X,Y,var.equal = TRUE, alternative = "less")
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+loth<-qt(0.05,d.f.,lower.tail = T)
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x> t  ]<-NA
+    out
+}
+options(repr.plot.height=2,repr.plot.width=6)
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.4)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+#### Test unilateral (derecha)
+
+$$H_0 : \mu(X) <= \mu(Y) $$ $$H_1 : \mu(X) > \mu(Y) $$
+
+```{r}
+t.test(X,Y,var.equal = TRUE, alternative = "greater")
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+upth<-qt(0.05,d.f.,lower.tail = F)
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x<upth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x< t  ]<-NA
+    out
+}
+options(repr.plot.height=2,repr.plot.width=6)
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.4)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+## t-test de Welch
+
+Este test es usado cuando asumimos que las dos poblaciones no tienen
+porqué tener la misma varianza. El test estdístico es calculado así:
+$$ t=\frac{E[X]-E[Y]}{s_{\bar{\Delta}}} $$
+
+donde
+$$ s_{\bar{\Delta}}=\sqrt{\frac{Var[X]}{n_x}+\frac{Var[Y]}{n_y}} $$
+
+Y el número de grados de libertad es:
+$$ d.f.= \frac{\left(\frac{Var[X]}{n_x}+\frac{Var[Y]}{n_y} \right)^2}{\frac{\left( \frac{Var[X]}{n_x} \right)^2}{n_x-1} + \frac{\left( \frac{Var[Y]}{n_y} \right)^2}{n_y-1}} $$
+
+igualmente lo calculamos sobre una t-student. Lo único que cambia es la
+forma de calcular los grados de libertad y la varianza.
+
+### Funciones en R
+
+Supongamos que al igual que en el caso anterior tenemos dos variables
+aleatorias X, con 10 muestras, e Y, con 15 muestas. Queremos saber si
+ambas proceden de la misma población. Una forma de saberlo es calcular
+la media de X e Y sin asumir que ambos grupos tienen la misma varianza.
+A continuación calcular el test t-student y ver el p-valor.
+
+```{r}
+set.seed(123)
+X<-rnorm(nx,mean=7,sd=3)
+Y<-rnorm(ny,mean=10,sd=0.1)
+```
+
+```{r}
+sd<-sqrt(var(X)/nx+var(Y)/ny)
+t<-(mean(X)-mean(Y))/(sd)
+df<-(var(X)/nx+var(Y)/ny)^2/((var(X)/nx)^2/(nx-1)+(var(Y)/ny)^2/(ny-1))
+pvalue<-pt(t,df)*2
+
+print(paste("El pvalor es",pvalue))
+```
+
+Esto se puede hacer en R con el comando *t.test*:
+
+```{r}
+t.test(X,Y)
+```
+
+En este caso esl p-valor es realmente bajo, así que podemos rechazar la
+hipótesis nula y asumir que ambas medias no son iguales.
+
+![Imagen no cargada. Edita y borra la \@ . Fuente: Pawn
+Stars](pics/pvalor.jpg)
+
+### Ejemplo: Peso de los niños al nacer
+
+Este dataset contien información de bebes recien nacidos y sus padres.
+Nos vamos a centrar en si la madre era o no fumadora.
+
+```{r}
+bwt<-read.csv("data/birthweight_reduced.csv")
+bwt$smoker<-factor(bwt$smoker,labels = c("NO","YES"))
+```
+
+<https://www.geeksforgeeks.org/data-science/difference-between-one-tailed-and-two-tailed-tests/>
+
+**Test bilateral**. Hipótesis:
+
+$$H_0 : \mu(X) = \mu(Y) $$ $$H_1 : \mu(X) \ne \mu(Y) $$
+
+-   $H_0$ : El peso medio de los niños al nacer es igual en las madres
+    fumadoras y no fumadoras.
+-   $H_1$ : El peso medio de los niños al nacer es diferente (mayor o
+    menor) en las madres fumadoras y no fumadoras.
+
+El pvalor es menor de 0.05, podemos tener indicios para rechazar la
+hipótesis nula y asumir que el peso de los niños al nacer va a ser
+diferente si las madres fuman o no.
+
+AVISO: No sabemos si los niños de las madres fumadores pesan más o
+menos, solo que pesan **distinto**.
+
+```{r}
+head(bwt)
+```
+
+```{r}
+# Ejecutar t.test
+tw<-t.test(bwt$Birthweight[bwt$smoker=="YES"],bwt$Birthweight[bwt$smoker=="NO"])
+tw
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+library(ggplot2)
+d.f.<-tw$parameter
+t<-tw$statistic
+loth<-qt(0.025,d.f.,lower.tail = T)
+upth<-qt(0.025,d.f.,lower.tail = F)
+
+paste("El margen que nos llevaría a rechazar la hipótesis nula está fuera del rango: [",
+      round(loth,2),",",round(upth,2),"]")
+
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  & x<upth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> -abs(t)  & x< abs(t)  ]<-NA
+    out
+}
+
+
+options(repr.plot.height=2,repr.plot.width=6)
+xdf<-data.frame(z=c(-4,4))
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.2)+
+  geom_text(x=3,y=0.1,size=4,label=paste0("t_cdf(",round(upth,2),")=0.975"))+
+  geom_text(x=-3,y=0.1,size=4,label=paste0("t_cdf(",round(loth,2),")=0.025"))+
+
+  geom_vline(xintercept = t,color="blue")+
+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+**Test unilateral** (izquierdo). Hipótesis:
+
+$$H_0 : \mu(X) >= \mu(Y) $$ $$H_1 : \mu(X) < \mu(Y) $$
+
+-   $H_0$ : El peso medio de los niños al nacer es **mayor o igual** en
+    las madres fumadoras que en las **no** fumadoras.
+-   $H_1$ : El peso medio de los niños al nacer es **menor** en las
+    madres fumadoras que en las **no** fumadoras.
+
+```{r}
+tw<-t.test(bwt$Birthweight[bwt$smoker=="YES"],bwt$Birthweight[bwt$smoker=="NO"],alternative = "less")
+tw
+```
+
+El pvalor es menor de 0.05, podemos tener indicios para rechazar la
+hipótesis nula y asumir que el peso de los **niños de las madres
+fumadoras pesan menos**.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+loth<-qt(0.05,d.f.,lower.tail = T)
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x> t  ]<-NA
+    out
+}
+options(repr.plot.height=2,repr.plot.width=6)
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=1)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.9)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+**Test unilateral** (derecho). Hipótesis:
+
+$$H_0 : \mu(X) <= \mu(Y) $$ $$H_1 : \mu(X) > \mu(Y) $$
+
+-   $H_0$ : El peso medio de los niños al nacer es **menor o igual** en
+    las madres fumadoras que en las **no** fumadoras.
+-   $H_1$ : El peso medio de los niños al nacer es **mayor** en las
+    madres fumadoras que en las **no** fumadoras.
+
+```{r}
+# Ejecutar t.test
+tw<-t.test(bwt$Birthweight[bwt$smoker=="YES"],bwt$Birthweight[bwt$smoker=="NO"],alternative = "greater")
+tw
+```
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+upth<-qt(0.05,d.f.,lower.tail = F)
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x<upth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[ x< t  ]<-NA
+    out
+}
+options(repr.plot.height=2,repr.plot.width=6)
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.4)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+```
+
+En este caso no podemos rechazar la hipótesis nula. El tabaco puede
+afectar o no al bebé, pero lo que parece más probable es que un bebé de
+madre fumadora no va a pesar más.
+
+## T-test emparejado
+
+Este test es usado cuando hay **dos grupos** de datos los cuales están
+**correlados** y quieres saber si la media de ambos grupos es la misma o
+no. Esto puede ser usado por ejemplo para comprobar un estudio médico y
+queremos comprobar si los valores han cambiado antes y después del
+tratamiento. La hipóteis nula dice que la diferencia entre las dos
+medias es igual a $\mu_0$ $$H_0 : \mu(X) - \mu(Y) = \mu_0 $$
+$$H_1 : \mu(X) -\mu(Y) \ne \mu_0 $$ El test estadístico es calculado de
+la media y varianza de la diferencia de las dos muestras:
+$$ t=\frac{E[X-Y]-\mu_0}{\sqrt{var[X-Y]/n}}$$
+
+### Funciones en R
+
+En el siguiente ejemplo queremos comprobar si la diferencia en media
+entre las dos variables aleatorias X e Y es $\mu_0=3$.
+
+```{r}
+n<-20
+X<-rnorm(n,mean=5,sd=4)
+Y<-X-rnorm(n,mean=3,sd=2)
+data.frame(X,Y)
+```
+
+```{r}
+mu0<-2
+
+D<-X-Y
+t<-(mean(D)-mu0)/(sqrt(var(D)/n))
+pvalor<-(1-pt(t,n-1))*2
+print(paste("El pvalor es",pvalor))
+```
+
+O con la función *t.test*
+
+```{r}
+t.test(X,Y,mu=mu0,paired = TRUE)
+```
+
+### Ejemplo: Colesterol
+
+Un estudio probó si el colesterol se redujo después de usar una cierta
+marca de margarina como parte de una dieta baja en grasas y baja en
+colesterol. Los sujetos consumieron en promedio 2,31g del ingrediente
+activo, stanol eastern, un día. Este conjunto de datos contiene
+información sobre 18 personas que usan margarina para reducir el
+colesterol en tres puntos de tiempo. Fuente:
+[www.statstutor.ac.uk](http://www.statstutor.ac.uk)
+
+```{r}
+chl<-read.csv("data/stcp-dataset-cholesterol_des.csv")
+
+head(chl)
+
+print("Para la margarina tipo A")
+t.test(chl$Before[chl$Margarine=="A"], chl$After4weeks[chl$Margarine=="A"], paired=TRUE)
+
+print("Para la margarina tipo B")
+t.test(chl$Before[chl$Margarine=="B"], chl$After4weeks[chl$Margarine=="B"],paired=TRUE)
+```
+
+En ambos casos el p-valor es bastante bajo, así que parece que los
+sujetos realmente bajaron su nivel de colesterol, muy posiblemente a
+causa de la margarina.
+
+## Wilcoxon-Mann-Whitney test
+
+El U-test Mann-Whitney es usado para **comparar si dos variables
+independientes vienen de la misma distribución**. Funciona bajo las
+siguientes suposiciones:
+
+-   Todas las observaciones de ambos grupos son independientes entre sí,
+
+-   Las respuestas son ordinales (es decir, se puede decir al menos, de
+    dos observaciones, caul es la mayor)
+
+-   Bajo la hipótesis nula $H_0$, la probabilidad de que una observación
+    de la población X supere una observación de la segunda población Y
+    es igual a la probabilidad de que una observación de Y exceda una
+    observación de X.
+
+-   La hipótesis alternativa $H_1$ es la probabilidad de que una
+    observación de la población X que excede una observación de la
+    segunda población Y sea diferente de la probabilidad de que una
+    observación de Y exceda una observación de X. La alternativa también
+    puede establecerse en términos de una sola prueba a los lados, por
+    ejemplo: P (X\> Y)\> P (Y\> X).
+
+Las hipótesis son: $$
+\begin{split}
+H_0 : P(X > Y) = P(Y > X) \\
+H_1 :P(X > Y) \ne P(Y > X)
+\end{split}
+$$
+
+### Funciones en R
+
+Esto puede ser calculado en R con la función $wilcox.test$. Vamos a
+comparar si existe o no diferencia en las millas por galón que puede
+recorrer cuando un coche tiene marchas manuales o automáticas.
+
+```{r}
+head(mtcars)
+```
+
+```{r}
+mtcars$mpg
+```
+
+```{r}
+mtcars$am<-as.factor(mtcars$am) 
+mtcars$am
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+
+ggplot(data=mtcars, aes(x=mpg, color=am))+geom_density()
+```
+
+```{r}
+wilcox.test(mpg~am, data=mtcars)
+```
+
+Podemos asumir que el consumo de gasolina de un coche (mtcars\$mpg,
+miles per gallon), es dependiente de si el coche es o no automático
+(mtcars\$am) porque el valor tan bajo del p-valor nos obliga a rechazar
+la hipótesis nula. La hipótesis nula es que ambas distribuciones son
+iguales.
+
+## Test de varianza Fisher
+
+El test F es usado cuando se tienen **dos** grupos de datos procedentes
+de una distribución **normal** y se quiere saber si la **varianza** de
+ambos grupos es la misma. Esto significa que las variables son
+homocedasticas. La hipótesis con la que trabaja este test es :
+$$H_0 : \sigma(X) = \sigma(Y) $$ $$H_1 : \sigma(X) \ne \sigma(Y) $$
+
+El test estadítico se basa en el cociente de dos varianzas:
+$$F=\frac{Var[X]}{Var[Y]}$$
+
+Esto sigue una distribución F con $n_x-1$ y $n_y-1$ grados de libertad.
+
+```{r}
+nx<-10
+ny<-15
+X<-rnorm(nx,mean=7,sd=1)
+Y<-rnorm(ny,mean=7,sd=3)
+var.test(X,Y)
+```
+
+### Test de Bartlett
+
+El test de Bartlett es usado cuando se tienen **varios** grupos de datos
+procedentes de una distribución **cualquiera** y se quiere saber si la
+**varianza** de ambos grupos es la misma. Esto significa que las
+variables son homocedasticas. La hipótesis con la que trabaja este test
+es : $$H_0 : \sigma(X) = \sigma(Y) $$ $$H_1 : \sigma(X) \ne \sigma(Y) $$
+
+```{r}
+n<- 20
+df<-data.frame(X=runif(n,min=-1,max=2),group="A")
+df<-rbind(df,data.frame(X=runif(n,min=0,max=1),group="B"))
+
+#head(df)
+
+bartlett.test(X~group, data=df)
+```
+
+## Comparando normalidad (Shapiro)
+
+El Test de Shapiro--Wilk se usa para comprobar la normalidad de un
+conjunto de datos. Se plantea como hipótesis nula que una muestra X
+proviene de una población normalmente distribuida. Se considera como
+unos de los tests más fiables.
+
+En R se ejecuta llamando a shapiro.test()
+
+```{r}
+shapiro.test(rnorm(100,mean=10,sd=4))
+```
+
+```{r}
+# EJemplo shaprito uniforme
+shapiro.test(runif(100,min= -10, max=10))
+```
+
+Si el p-valor es muy bajo deberíamos rechazar la hipótesis nula. Es
+decir, la distribución no es normal.
+
+### Ejemplo: Peso de niños al nacer
+
+```{r}
+library(ggplot2)
+bwt<-read.csv("data/birthweight_reduced.csv")
+bwt$smoker<-factor(bwt$smoker,labels = c("NO","YES"))
+
+paste("Las muestras de peso para madres fumadoras parecen seguir una gaussiana. pvalor:",
+          shapiro.test(bwt$Birthweight[bwt$smoker=="YES"])$p.value)
+paste("Las muestras de peso para madres NO fumadoras parecen seguir una gaussiana. pvalor:",
+          shapiro.test(bwt$Birthweight[bwt$smoker=="NO"])$p.value)
+
+
+tw<-t.test(bwt$Birthweight[bwt$smoker=="YES"],bwt$Birthweight[bwt$smoker=="NO"])
+print("Podemos aplicar un t-welch's test")
+tw
+print("Parece que podría haber una diferencia estadística significativa en el peso del bebé si la madre fuma o no.")
+```
+
+# Comparando distintos grupos de datos
+
+## ANOVA 1 variable
+
+Usamos ANOVA para comparar las medias de tres o más grupos de datos. Es
+decir, compara una variable dependiente (los datos de entrada) con una
+variable independiente que tiene tres o más niveles (uno por cada
+grupo). Cada nivel identifica cada uno de los grupos de datos. La
+hipótesis nula afirma qeu todos los grupos tienen la misma media: $$
+\begin{split}
+H_0 : \mu_1 = \mu_2 = ... = \mu_k \\
+H_1 : \text{at leas one pair }\mu_j\ne \mu_i 
+\end{split}
+$$ Estas hipótesis examinan si las muestras siguen la siguiente
+regresión lineal: $y_{ij}=\mu_j+\varepsilon_{ij}$, donde:
+
+-   $y_{ij}$ es la variable dependiente, muestra i-ésima del grupo j.
+
+-   $\mu_j$ es la media real de grupo j, de la población total
+    (desconocida pero estimable)
+
+-   $\varepsilon_{ij}$ son los errores resultantes del modelo
+
+-   $\bar{y}_j$ es la media muestral del grupo j
+
+-   $k$ es el número de grupos
+
+-   $n_j$ es el número de muestras del grupo j
+
+-   $n=\sum_{j=1}^{k}n_j$ es el número total de muestras
+
+El test-F omnibus test en anova de una variable es: $$
+F=\frac{\sum_{j=1}^{k} n_j \left ( \bar{y_j}-\bar{y} \right )^2 / \left ( k-1 \right ) }{\sum_{j=1}^{k} \sum_{i=1}^{n_j} \left ( y_{ij}-\bar{y_j} \right )^2 / \left ( n-k \right ) }=\frac{\text{Suma cuadrádica de residuos de cada grupo}}{\text{Suma cuadrádica de residuos dentro de un grupo}}
+$$
+
+ANOVA produce un test estadístico F, la relación de la varianza
+calculada entre los medios a la varianza dentro de las muestras. **Si
+los miembros del grupo provienen de poblaciones con los mismos valores
+medios, la varianza entre las medias del grupo debe ser menor que la
+varianza de las muestras**, siguiendo el teorema del límite central. Por
+lo tanto, una relación más alta implica que las muestras se tomaron de
+poblaciones con diferentes valores medios.
+
+Cuando solo hay dos medias para comparar la prueba t de Student (se debe
+usar la prueba t de Student), la prueba t y la prueba F son
+equivalentes; la relación entre ANOVA y t viene dada por $F = t^2$.
+
+Suposiciones de ANOVA:
+
+-   La variable dependiente está distribuida sigue una distribución
+    normal en cada grupo.
+
+-   Hay homogeneidad de varianzas.
+
+-   Las observaciones son independientes.
+
+### Funciones en R
+
+```{r}
+set.seed(123)
+n1<-10; n2<-50; n3<-40
+m1<-18; m2<-15; m3<-15
+sd<-7
+
+a1<-rnorm(n1,mean=m1,sd=sd)
+a2<-rnorm(n2,mean=m2,sd=sd)
+a3<-rnorm(n3,mean=m3,sd=sd)
+
+ma1<-mean(a1)
+ma2<-mean(a2)
+ma3<-mean(a3)
+ma<-mean(c(a1,a2,a3))
+masq_between_group<-n1*(ma1-ma)^2+n2*(ma2-ma)^2+n3*(ma3-ma)^2
+df_between_group<-3-1
+mean_square_value_between_group<-masq_between_group/df_between_group
+
+masq_within_group<-sum((a1-ma1)^2)+sum((a2-ma2)^2)+sum((a3-ma3)^2)
+df_within_group<-n1-1+n2-1+n3-1
+mean_square_value_within_group<-masq_within_group/df_within_group
+
+F<-mean_square_value_between_group/mean_square_value_within_group
+F
+
+pvalue<-1-pf(F,df_between_group,df_within_group)
+print(paste("El pvalor es",pvalue))
+```
+
+El p-valor es realmente bajo, por lo que podemos rechazar la hipótesis
+nula. Esto significa que no todos los grupos tienen la misma media. Se
+puede calcular con la función *aov*.
+
+```{r}
+df <- rbind(data.frame(value=a1,cl="1"),data.frame(value=a2,cl="2"),data.frame(value=a3,cl="3"))
+df$cl <- as.factor(df$cl)
+head(df)
+str(df)
+```
+
+```{r}
+summary(aov( value ~ cl, data=df))
+```
+
+O equivalentemente con la función *oneway.test* con el parámetro
+*var.equal=T*
+
+```{r}
+oneway.test( value ~ cl, data=df,var.equal = T)
+```
+
+#### Diferente varianza
+
+Cuando los grupos no presentan la misma varianza, en lugar del test F se
+puede utilizar el test de Welch. Esto lo hace R con la función
+*oneway.test*
+
+```{r}
+oneway.test( value ~ cl, data=df)
+```
+
+#### Diferentes distribuciones
+
+El test de Kruskal-Wallis se utiliza cuando en ANOVA no cumplimos la
+normalidad de los datos, cuando las muestras no vienen de una
+distribución gausiana.
+
+En R se utiliza la función *kruskal.test()*
+
+```{r}
+kruskal.test( value ~ cl, data=df)
+```
+
+#### Regresión lineal
+
+Resultados parecidos se pueden conseguir con una regresión lineal:
+
+```{r}
+summary(lm(value ~ cl, data=df))
+```
+
+```{r}
+paste("Donde la media del primer grupo es la intersección con 0:",mean(df$value[df$cl==1]))
+
+paste("Donde las medias del grupo2 se define en lm respecto al primer grupo:",mean(df$value[df$cl==2])-mean(df$value[df$cl==1]))
+paste("Donde las medias del grupo3 se define en lm respecto al primer grupo:",mean(df$value[df$cl==3])-mean(df$value[df$cl==1]))
+```
+
+Pero simplemente hace test estadísticos por pares respecto al grupo más
+bajo. Es mejor usar ANOVA+Turkey test.
+
+```{r}
+summary(lm(value ~ cl, data=df[df$cl==2 | df$cl==3,]))
+```
+
+### Test de Tukey
+
+El test de Tukey también conocido como test HSD (honest significant
+difference), puede ser usado para encontrar las medias que son
+significativamente diferentes de cada uno de los grupos. El test de
+Tukey compara las medias de cada grupo respecto a las medias de cada
+otro grupo e indentifica cualquier diferencia entre las dos medias
+mayores que el error esperado.
+
+Es euivalente a un test de studnet pero con una pequeña diferenia.
+Cuando se hace el test Turkey se asume homogeneidad, así que la varianza
+es calculada con todas las muestras de todos los grupo. Cuando se hace
+un test de estudent la varianza de cada grupo es calculada
+independientemente lo cual produce un resultado menos robusto.
+
+```{r}
+TukeyHSD(aov( value ~ cl, data=df))
+```
+
+Esto significa que el grupo 3 y 2 tienen una alta probabilidad de tener
+la misma media, y que la media del grupo 1 es diferente.
+
+```{r}
+tky<-TukeyHSD(aov( value ~ cl, data=df))
+tky.result<-data.frame(tky$cl)
+cn <-sort(unique(df$cl))
+resm <- matrix(NA, length(cn),length(cn))
+rownames(resm) <- cn
+colnames(resm) <- cn
+resm[lower.tri(resm) ] <- round(tky.result$p.adj,4)
+resm[upper.tri(resm) ] <- t(resm)[upper.tri(resm)] 
+diag(resm) <- 1
+library(ggplot2)
+library(reshape2)
+dfResm <- melt(resm)
+ggplot(dfResm, aes(x=Var1, y=Var2, fill=value))+
+  geom_tile(colour = "black")+
+  geom_text(aes(label=paste(round(value*100,0),"%")),size = 3) +
+  scale_fill_gradient(low = "white",high = "steelblue")+
+  ylab("Class")+xlab("Class")+theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
+```
+
+### Ejemplo: Efectividad de una dieta
+
+https://www.sheffield.ac.uk/polopoly_fs/1.570199!/file/stcp-Rdataset-Diet.csv
+
+Los datos contienen información de 76 personas que tomaron una de las
+tres dietas (1, 2 o 3). Además se aporta información extra como edad,
+género y altura. El objetivo del estudio es compara cual de las tres
+dietas era la mejor para perder peso.
+
+```{r}
+diet = read.csv("data/stcp-Rdataset-Diet.csv",row.names=1)
+head(diet)
+diet$loss <- diet$pre.weight - diet$weight6weeks
+diet$Diet <- factor(diet$Diet)
+str(diet)
+```
+
+```{r}
+library(ggplot2)
+ggplot(diet, aes(y=loss, x=Diet, color=Diet))+geom_boxplot()
+```
+
+Comprobamos que los datos siguen una normal y que las varianzas son
+iguales con lo cual podemos **aplicar un test ANOVA**.
+
+```{r}
+for (v in levels(diet$Diet)){
+    print(paste("Diet:",v,"pvalue,",
+                shapiro.test(diet$loss[diet$Diet==v])$p.value))
+}
+```
+
+Aplicamos el test ANOVA y vemos que efectivamente, hay una diferencia
+estadística significativa entre las diferentes dietas.
+
+```{r}
+oneway.test(loss~Diet, data=diet, var.equal = T)
+```
+
+```{r}
+anovatest <- aov(loss~Diet, data=diet)
+summary(anovatest)
+```
+
+```{r}
+tky<-TukeyHSD(anovatest)
+tky
+```
+
+```{r}
+library(ggstatsplot)
+oneway.test(loss~Diet, data=diet)
+ggbetweenstats(
+  data = diet,
+  x = Diet,
+  y = loss,
+  xlab = "Dieta",
+  ylab = "Perdida peso",
+  plot.type = "boxviolin",
+  #type = "robust" 
+  type = "parametric"  
+)
+```
+
+```{r}
+tky.result<-data.frame(tky$Diet)
+cn <-sort(unique(diet$Diet))
+resm <- matrix(NA, length(cn),length(cn))
+rownames(resm) <- cn
+colnames(resm) <- cn
+resm[lower.tri(resm) ] <- round(tky.result$p.adj,4)
+resm[upper.tri(resm) ] <- t(resm)[upper.tri(resm)] 
+diag(resm) <- 1
+library(ggplot2)
+library(reshape2)
+dfResm <- melt(resm)
+ggplot(dfResm, aes(x=Var1, y=Var2, fill=value))+
+  geom_tile(colour = "black")+
+  geom_text(aes(label=paste(round(value*100,0),"%")),size = 3) +
+  scale_fill_gradient(low = "white",high = "steelblue")+
+  ylab("Class")+xlab("Class")+theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
+```
+
+# ANOVA dos variables independientes
+
+El ANOVA con dos variables independientes es una extensión del ANOVA de
+un factor en el que hay dos variables (factores) que interactúan con los
+datos. En este caso, los datos se dan en forma de matriz donde cada
+celda tendrá las muestras correspondientes a los dos factores
+dependientes, uno dado por el número de fila y otro por el número de
+columna.
+
+La hipótesis nula afirma que todos los grupos tienen la misma media: $$
+\begin{split}
+H_0 &: \beta_1 = \beta_2 = \beta_3 = 0\\
+H_1 &: \text{al menos un par }\beta_j\ne \beta_i
+\end{split}
+$$ Estas hipótesis examinan si las muestras siguen la siguiente
+regresión lineal de diferentes grupos:
+$y_{i}=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\beta_3x_{i1}x_{i2}+\varepsilon_{i}=\widehat{y_i}+\varepsilon_{i}$,
+donde:
+
+-   $y_{i}$ es la variable dependiente, muestra i-ésima. $\beta_0$ es un
+    coeficiente desconocido que tiene que ser estimado, es independiente
+    de todas las variables. $\beta_1$ es un coeficiente desconocido que
+    tiene que ser estimado para la primera variable independiente
+    $x_{i1}$.
+
+-   $\beta_2$ es un coeficiente desconocido que tiene que ser estimado
+    para la segunda variable independiente $x_{i2}$.
+
+-   $\beta_3$ es un coeficiente desconocido que tiene que ser estimado,
+    refleja la interdepencia entre $x_{i1}$ y $x_{i2}$.
+
+-   $x_{i1}$ es la primera variable dependiente asociada con la i-ésima
+    muestra.
+
+-   $x_{i2}$ es la segunda variable dependiente asociada con la i-ésima
+    muestra.
+
+-   $\varepsilon_{ij}$ son los errores resultantes del modelo.
+
+-   $\widehat{y_i}$ es la estimación de la i-esima variable.
+
+-   $k$ es el número de grupos
+
+-   $n$ es el número total de muestras
+
+El test estadítico F es: $$
+F=\frac{\sum_{j=1}^{n} \left ( \widehat{y_j}-\bar{y} \right )^2 / k }{\sum_{j=1}^{k} \sum_{i=1}^{n_j} \left ( y_{ij}-\widehat{y_j} \right )^2 / \left ( n-k-1 \right ) }
+$$
+
+### Funciones en R
+
+```{r}
+varId1<-c(1,2)
+varId2<-seq(0,5,length=4)
+var1<-c(rep(varId1,each=50))
+var2<-c(rep(varId2,length.out=length(var1)))
+var1
+var2
+```
+
+```{r}
+y<-rnorm(length(var1),mean=0,sd=2)+var1+var2
+dfy<-data.frame(y,var1,var2)
+
+summary(aov( y ~ var1*var2, data=dfy))
+```
+
+```{r}
+# Ejemplo dieta y género
+#str(diet)
+diet$gender<-factor(diet$gender, labels=c("female","male"))
+summary(aov(loss~Diet+gender,data=diet))
+```
+
+Vemos que afecta más a ciertas dietas en función del género
+
+```{r}
+summary(aov(loss~Diet*gender,data=diet))
+```
+
+# Tablas de contingencia
+
+Una tabla de contingencia es una tabla o matriz que muestar la
+frecuencia de ocurrencia de diferentes variables.
+
+| .      | perro | gato |
+|--------|-------|------|
+| blanco | 10    | 5    |
+| negro  | 4     | 3    |
+
+## Chi cuadrado
+
+El test chi cuadrado de Pearson puede ser usado como un test para
+validad la **independencia de datos categóricos**. Las hipótesis son:
+
+-   La hipótesis nula $H_0$ es que las variables son independientes, no
+    hay asociación estadística.
+
+-   La hipótesis alternativa $H_1$ es que hay una relación estadístico o
+    asociación entre variables.
+
+Este test hace las siguientes suposiciones:
+
+-   Muestra obtenida por muestreo aleatorio.
+
+-   La muestra es lo suficientemente grande.
+
+-   El conteo en cada celda también tiene que ser estadísticamente
+    significativo.
+
+-   Las muestras se suponen independientes, los datos no pueden estar
+    correlados.
+
+Este test se puede usar para las siguientes comparaciones:
+
+-   **Test de homogeneidad** (goodnes: Compara si la distribución de
+    datos es homogenea.
+
+-   **Test de independencia**: Compara si observaciones de dos variables
+    son independedientes una de la otra.
+
+-   **Test de bondad**: para comparar si una distribución de frecuencias
+    observdada difiere de una teórica.
+
+### Una variable
+
+En esta caso las observaciones consisten en valores de una única
+variable independiente (ej: un dado). El valor del test estadístico es:
+
+$$
+\chi^2 = \sum_{i=1}^{n} \frac{(O_i-E_i)^2}{E_i} = N \sum_i^n \frac{(O_i/N-p_i)^2}{p_i}
+$$
+
+Donde:
+
+-   $N$ es el número total de elementos observados.
+
+-   $O_i$ es el número de elementos observados en la categoría *i*.
+
+-   $E_i$ es el número de elementos esperados en la categoría *i*.
+
+-   $p_i$ es la probabilidad esperada de encontrar un elemento en la
+    categoría *i*. $$p_i=E_i/N$$
+
+-   $n$ es el número de categoría en el estudio.
+
+Este estadístico es usado para calcular el p-valor comparando el valor
+del estadístico con la distribución chi-cuadrado donde el número de
+grados de libertad será $n-1$.
+
+#### Funciones en R
+
+Por ejemplo, imaginemos que queremos comprobar si un dado de 4 lados es
+justo, es decir, si no está trucado. Tiramos 40 veces y apuntamos el
+número de veces. La tabla de frecuencias que aparece es:
+
+| **1** | **2** | **3** | **4** |
+|-------|-------|-------|-------|
+| 10    | 7     | 9     | 14    |
+
+Comprobar esto sería un **test de homogeneidad**.
+
+```{r}
+#observed<-c(10,7,9,14)
+observed<-c(10,7,9,1)
+
+N<-sum(observed)
+expected<-N/length(observed)
+test<-sum((observed-expected)^2/expected)
+
+pvalue<-1-pchisq(test,length(observed)-1)
+print(paste("El pvalor es",pvalue))
+```
+
+El p-valor para aceptar la hipótesis nula es muy alto, así que podemos
+asumir $H_0$ y suponer que el dado probablemente sea justo. La función
+*chisq.test* de R puede ser usada para este propósito:
+
+```{r}
+cqt <- chisq.test(observed)
+cqt
+```
+
+```{r}
+d.f.<-cqt$parameter
+t<-cqt$statistic
+loth<-qchisq(0.95,d.f.,lower.tail = T)
+
+
+qsd009<-function(x){    
+    out<-dchisq(x,d.f.)
+    out[x < loth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dchisq(x,d.f.)
+    out[ x <  t  ]<-NA
+    out
+}
+
+chdf<-data.frame(z=c(-1,15))
+
+ggplot(chdf,aes(x=z))+stat_function(fun=dchisq,args = list(df = d.f.))+  
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.9)+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=1)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+options(repr.plot.height=4,repr.plot.width=7)
+```
+
+### Dos variables
+
+En este caso, una observación consiste en los valores de dos variables.
+La hipótesis nula es que la ocurrencia de estos valores sea
+estadísticamente independiente. Cada observación está localizada en una
+celda de una matriz llamada tabla de contingencia. Si hay $r$ filas y
+$c$ columnas en la tabla, la frecuencia teórica por cada celda, bajo la
+hipótesis de independencia es:
+
+$$
+    E_{i,j}=N p_i p_j
+$$ Donde:
+
+-   p_i: Es la probabilidad de la fila $i$.
+
+-   p_j: Es la probabilidad de la columna $j$.
+
+En este caso el valor del test estadístico es:
+
+$$
+\chi^2 = \sum_i\sum_j \frac{(O_{i,j}-E_{i,j})^2}{E_{i,j}} 
+$$
+
+Y el número de grados de libertad es $$(r-1)(c-1)$$.
+
+#### Funciones en R
+
+Imaginemos que tenemos tres grupos de personas, A, B y C y les
+preguntamos si les gustan más los gatos o los perros. Obtendríamos la
+siguietne tabla:
+
+| .    | **A** | **B** | **C** |
+|------|-------|-------|-------|
+| cats | 100   | 205   | 95    |
+| dogs | 203   | 401   | 205   |
+
+Esto sería un **test de independencia** para ver si hay diferencia entre
+perros y gatos.
+
+```{r}
+M <- as.table(rbind(c(100, 205, 95), c(203,400, 205)))
+dimnames(M) <- list(animal = c("cats", "dogs"), group = c("A","B", "C"))
+M
+chisq.test(M)
+```
+
+El elevado p-valor de 0.81 indica que podemos aceptar $H_0$, lo que
+significa que no hay diferencias en los grupos de personas que le gustan
+los perros y los gatos.
+
+Si modificamos una celda del grupo **C** y perros, obtenenemos un
+resultado diferente, en este caso tenemos que rechazar la hipótesis nula
+$H_0$ y asumir que hay diferencias entre perros y gatos para el siguiene
+grupo:
+
+| .    | **A** | **B** | **C** |
+|------|-------|-------|-------|
+| cats | 100   | 205   | 95    |
+| dogs | 203   | 401   | 275   |
+
+```{r}
+M <- as.table(rbind(c(100, 205, 95), 
+                    c(203, 400, 275)))
+M
+cqt<- chisq.test(M)
+cqt$p.value
+cqt
+```
+
+```{r}
+d.f.<-cqt$parameter
+t<-cqt$statistic
+loth<-qchisq(0.95,d.f.,lower.tail = T)
+
+
+qsd009<-function(x){    
+    out<-dchisq(x,d.f.)
+    out[x < loth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dchisq(x,d.f.)
+    out[ x < t  ]<-NA
+    out
+}
+
+chdf<-data.frame(z=c(-1,15))
+
+ggplot(chdf,aes(x=z))+stat_function(fun=dchisq,args = list(df = d.f.))+  
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.9)+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=1)+
+  geom_vline(xintercept = t,color="blue")+
+  theme_linedraw()
+options(repr.plot.height=4,repr.plot.width=7)
+```
+
+## Comparando distribuciones
+
+Es posible comparar si una distribución discreta sigue o no determinada
+función de probabilidad conocida. Para ello basta con comprobar como
+varía en una tabla
+
+En estos casos el valor $E_{i}$ es pasado como parámetro.
+
+$$
+\chi^2 = \sum_i^n \frac{(O_{i}-E_{i})^2}{E_{i}}=  N \sum_i^n \frac{(O_{i}-p_{i})^2}{p_{i}}
+$$
+
+donde el número de grados de libertad es igual al número de columnas
+posibles menos el número de parámetros estimados: $$
+d.f=n-p
+$$
+
+```{r}
+#rdata<-rpois(100, lambda = 7)
+rdata<-round(runif(100, min=0, max=20))
+
+tdata<-table(rdata)
+tdata
+#tdata<-table(factor(rdata, levels = as.character(0:max(rdata))))
+#tdata
+tdata<-c(as.numeric(tdata),0)
+tdata
+tdata<-tdata/sum(tdata)
+tdata
+```
+
+```{r}
+probs<-dpois(0:max(rdata), lambda = mean(rdata))
+probs<-c(probs,1-sum(probs))
+rbind(primary=tdata,reference=round(probs,4))
+
+chisq.test(x=tdata,  p=probs)
+```
+
+```{r}
+chisq.test(x=tdata,  p=probs, simulate.p.value=T)
+```
+
+## Corrección de Yates por continuidad
+
+El uso de la distribución chi-cuadrado para interpretar el test
+estadístico requiere suponer que la probabilidad discreta de frecuencias
+binomiales observadas en la tabla se puede aproximar mediante la
+distribución chi-cuadrado continuo. Esta suposición no es del todo
+correcta e introduce algún error.
+
+Para reducir el error en la aproximación, Frank Yates sugirió una
+corrección para la continuidad que ajusta la fórmula del test
+chi-cuadrado. Consiste en restar como **máximo 0.5** de la diferencia
+entre cada valor **observado** y su **esperado** en una tabla de
+contingencia de 2×2. Si la diferencia entre el valor observado y
+esperado fuera menor de 0.5, el numerador simplemente se iguala a 0, no
+se resta 0.5. Esto reduce el valor de chi-cuadrado obtenido y por lo
+tanto aumenta su valor de p.
+
+$$
+\chi^2 = \sum_i\sum_j \frac{(\mid O_{i,j}-E_{i,j}\mid-min(0.5,\mid O_{i,j}-E_{i,j}\mid))^2}{E_{i,j}}
+$$
+
+En R se activa o desactiva con el parámetro *correct* dentro de la
+función *chisq.test*
+
+```{r}
+#| scrolled: false
+m <- matrix(c(7, 30, 15,40 ),nrow=2, byrow = F, dimnames = list(c("Star Trek","Star Wars"),c("Mujeres","Hombres")))
+m
+chisq.test(m)
+
+m <- matrix(c(7, 30, 15,40 ),nrow=2, byrow = F, dimnames = list(c("Star Trek","Star Wars"),c("Mujeres","Hombres")))
+m
+chisq.test(m,correct = FALSE)
+```
+
+## Fisher
+
+El test exacto de Fisher siempre da el valor exacto del pvalor, a
+diferencia del test chi cuadrado el cual es solamente una aproximación,
+además funciona bien con muestras pequeñas.
+
+Una regla aproximada para decidir si usar la aproximáción del test
+chi-cuadrado o es necesario aplicar el test de fisher es cuando los
+valores de alguna de las celdas en una tabla de contingencia es menor de
+5 o menor de 10 si solo hay dos columnas.
+
+El test es difícil de calcular a mano, pero fácil de calcular en R con
+la función *fisher.test*.
+
+```{r}
+M <- as.table(rbind(c(100, 205, 95), c(203, 401, 275)))
+fisher.test(M)
+```
+
+## Ejemplo: Dataset Titanic
+
+El Titanic se hundió en 1912 con la pérdida de la mayoría de sus
+pasajeros. Se pueden obtener detalles sobre 1309 pasajeros y tripulación
+a bordo del barco Titanic. Fuente:
+[www.statstutor.ac.uk](http://www.statstutor.ac.uk)
+
+Veamos si la nacionalidad del pasaje tiene que ver o no a la hora de
+saber si sobrevivieron o no:
+
+```{r}
+tit<-read.csv(file = "data/stcp-dataset-titanic_des.csv")
+tit$Residence<-factor(tit$Residence,labels = c("American","British","Other"))
+tit$survived<-factor(tit$survived,labels = c("Died","Survived"))
+tblres<-table(tit[,c("Residence","survived")])
+tblres
+```
+
+```{r}
+chisq.test(tblres)
+```
+
+```{r}
+fisher.test(tblres)
+```
+
+Ambos tests nos obligan a rechazar la hipótesis nula: La nacionalidad no
+influye con la tasa de supervivencia.
+
+Así pues tenemos que concluir que si que existe una diferencia
+significativa en la probabilidad de sobrevivir dependiendo de la
+nacionalidad.
+
+# Distribuciones estadísticas
+
+Podemos ver si una variable aleatoria sigue una distribución estadística
+con los denominados ajustes de bondad (Goodness of fit).
+
+Los pasos para tratar de encontrar una distribución estadísca que encaje
+son:
+
+1.  Observar su distribución en frecuencias, calcular histograma
+    (geom_histogram) o la probabilidad estimada (geom_density)
+2.  Hacer una suposición sobre que distribución podría encajar. La
+    estimación de los parámetros concretos se hará utilizando *Máxima
+    versoimilitud*
+3.  Utilizar un test estadístico para comprobar como de buena o mala es
+    la distribución.
+
+```{r}
+bwt<-read.csv("data/birthweight_reduced.csv")
+options(repr.plot.height=4,repr.plot.width=6)
+
+bwtmn<-mean(bwt$Birthweight)
+bwtsd<-sd(bwt$Birthweight)
+
+library(ggplot2)
+ggplot(data=bwt,aes(x=Birthweight))+
+    stat_function(fun=dnorm,args = list(mean = bwtmn, sd=bwtsd), geom="area",color="green",fill="green",alpha=0.1)+
+    geom_density(color="red")+
+    theme_linedraw()
+```
+
+## Test Chi-cuadrado
+
+Ya vimos antes como utilizar este test para comparar una distribución de
+poisson. En esta sección veremos como repetir lo mismo para una
+distribución continua.
+
+El proceso es bastante sencillo simplemente hay que calcular el
+histograma de la función continua y calcular la probabilidad de que un
+punto aparezca en una de las barras usando como referencia la variable
+deseada.
+
+```{r}
+bwt<-read.csv("data/birthweight_reduced.csv")
+bwtmn<-mean(bwt$Birthweight)
+bwtsd<-sd(bwt$Birthweight)
+
+bwthist <- hist(bwt$Birthweight,breaks=14, right=FALSE,plot = FALSE)
+bwthist
+```
+
+```{r}
+suppressWarnings(library('zoo'))
+breaks<-bwthist$breaks
+breaks[1]<- -Inf
+breaks[length(breaks)]<- Inf
+
+breaks_cdf <- pnorm(breaks, mean=bwtmn, sd=bwtsd)
+ref.probs <- rollapply(data=breaks_cdf, width=2, function(x) x[2]-x[1])
+ref.probs
+```
+
+```{r}
+
+rbind(test=round(bwthist$density,4),reference=round(ref.probs,4))
+```
+
+```{r}
+chisq.test(bwthist$density, p=ref.probs)
+```
+
+### Test Kolmogorov-Smirnov
+
+Compara la probabilidad acumulada de una distribución con una de
+referencia.
+
+La función acumulativa empírica se puede representar como: $$
+F_{n}(x)={1 \over n}\sum _{i=1}^{n}\left\{{\begin{matrix}1&\mathrm {si} \ y_{i}\leq x,\\0&\text{otro caso} .\end{matrix}}\right.
+$$ El estadístico de Kolmogorov-Smirnov es: $$
+D_{n}=\sup _{x}|F_{n}(x)-F(x)|
+$$
+
+La función acumulativa de la distribución de Komogorov es: $$
+{Pr} (K\leq x)=1-2\sum _{k=1}^{\infty }(-1)^{k-1}e^{-2k^{2}x^{2}}={\frac {\sqrt {2\pi }}{x}}\sum _{k=1}^{\infty }e^{-(2k-1)^{2}\pi ^{2}/(8x^{2})}
+$$
+
+```{r}
+myrnd<-runif(100,min=-5,5)
+x<-sort(myrnd)
+cdf1<-cumsum(abs(x))/sum(abs(myrnd))
+cdf2<-pnorm(x,mean=0,sd=sqrt(100/12))
+idx<-which.max(abs(cdf1-cdf2))
+
+ggplot(data=data.frame(x=x,test=cdf1,reference=cdf2),aes(x=x))+
+    geom_step(aes(y=cdf1),col="red")+
+    geom_line(aes(y=cdf2),col="blue")+
+    geom_segment(x=x[idx],y=cdf1[idx],xend=x[idx],yend=cdf2[idx])+
+    theme_light()
+
+
+paste("F estadístico: ",abs(cdf1[idx]-cdf2[idx]))
+```
+
+En R se puede probar con la función *ks.test*
+
+```{r}
+ks.test(myrnd,"pnorm",0,sqrt(100/12))
+```
+
+También se puede utilizar para comparar entre dos distribuciones
+cualquiera para comprobar si son iguales o no.
+
+```{r}
+ks.test(myrnd, rnorm(length(myrnd),0,sqrt(100/12)))
+```
+
+Si volvemos al ejemplo del peso de los bebes, podemos ejecutar este test
+para ver si sigue una gaussiana o no:
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+ggplot(data=bwt,aes(x=Birthweight))+
+    stat_ecdf()+
+    stat_function(fun=pnorm,args =  list(mean = bwtmn, sd=bwtsd),col="red")+
+    theme_linedraw()+xlab("Peso")+ylab("prob acumulada")+ggtitle("Peso de un bebé al nacer")
+```
+
+```{r}
+ks.test(bwt$Birthweight,"pnorm",bwtmn,bwtsd)
+```
+
+El K-S test de R se queja de que hay datos duplicados. Algo que no
+debería ocurrir cuando tenemos datos que siguen una distribución
+realmente aleatoria.
+
+Tampoco se aconseja calcular los parámetros estadísticos como media y
+varianza de las muestras en si.
+
+Como alternativa se puede usar wilcox.test() o chisq.test(). También
+existe una alternativa y es usar el paquete KScorrect que aplica una
+corrección al test K-S para poder utilizar los parámetros estadísticos
+obtenidos de la muestra.
+
+```{r}
+# Para instalar el siguiente paquete en la máquina virtual de Vagrant descomentar las siguientes lineas:
+#
+#dir.create(file.path("/home/vagrant/R/x86_64-pc-linux-gnu-library/3.2"),recursive = T)
+#install.packages(c('KScorrect'), lib="~/R/x86_64-pc-linux-gnu-library/3.2", repos='https://cran.rstudio.com/',verbose=F)
+library("KScorrect",lib.loc = "/home/vagrant/R/x86_64-pc-linux-gnu-library/3.2")
+lc<-LcKS(bwt$Birthweight, cdf="plnorm")
+lc$p.value
+```
+
+# Test A/B
+
+Es un nombre utilizado realizar tests controlados con dos variantes A y
+B. Se puede utilizar por ejemplo para ver el cambio que se produce en
+una en una web.
+
+### Ejemplo test A/B
+
+Tenemos una web de compras. Sabemos que aproximadamente un 1% de los
+clientes que entran en la web acaban comprando algo.
+
+Queremos mejorar esto diseñando una nueva web y observando diferentes
+patrones en los usuarios que acceden.
+
+¿Que web es mejor la nueva o la original?
+
+```{r}
+
+set.seed(6)
+
+generateABdata<-function(N){
+    group<-factor(rbinom(N,size=1,p=0.5),label=c("Control","New"))
+    timespend<-rgamma(N,scale = 0.05,shape = 200)
+    timespend[group=="New"]<-rgamma(sum(group=="New"),scale = 0.1,shape = 110)
+    #timespend[group=="New"]<-rnorm(sum(group=="New"),mean = 12,sd = 5)
+
+    buy<-rbinom(N,size=1,p=0.01)
+    buy[group=="New"]<-rbinom(sum(group=="New"),size=1,p=0.015)    
+    buy<-factor(buy,label=c("NO","YES"))    
+    #timespend[buy=="YES" & group=="New"]<-rgamma(sum(buy=="YES" & group=="New"),scale = 0.1,shape = 100)
+    timespend[buy=="YES" & group=="New"]<-rnorm(sum(buy=="YES" & group=="New"),mean = 9,sd = 2)
+
+    data.frame(user_id=factor(1000+1:N),group,timespend,buy)
+}
+
+myweb<-generateABdata(1000)
+
+summary(myweb)
+```
+
+Primero comprobamos si el tiempo gastado en la página ha cambiado o no
+respecto a si la web es de control o es la nueva versión.
+
+```{r}
+paste("Los datos del grupo de control se parecen a una gaussiana. p-valor:",
+      shapiro.test(myweb$timespend[myweb$group=="Control"])$p.value)
+paste("Los datos del grupo nuevo se parecen a una gaussiana. p-valor:",
+      shapiro.test(myweb$timespend[myweb$group=="New"])$p.value)
+
+
+t.test(x=myweb$timespend[myweb$group=="Control"],y=myweb$timespend[myweb$group=="New"])
+```
+
+Parece que los usuarios pasan de media 11 minutos en la página nueva,
+mientras que en la de control pasan unos 10 minutos.
+
+Veamos si el tiempo medio que pasa un usuario en la web se ve afectado
+si compra o no:
+
+```{r}
+buy_users<-subset(myweb,buy=="YES")
+with(buy_users,t.test(x=timespend[group=="Control"],y=timespend[group=="New"]))
+```
+
+Parece que los usuarios que compran gastan una media de 9.2 minutos en
+la **nueva** web, mientras que gastan 9.68 en la **vieja**. Aunque el
+t-test nos dice que no hay evidencia estadística suficiente para
+asegurar que las dos medias realmente sean diferentes.
+
+Veamos que ocurre ahora con las compras, si han aumentado o no:
+
+```{r}
+s0<-sum(myweb$buy[myweb$group=="Control"]=="YES")
+t0<-sum(myweb$group=="Control")
+s1<-sum(myweb$buy[myweb$group=="New"]=="YES")
+t1<-sum(myweb$group=="New")
+
+m<-matrix(c(s0,s1,t1,t0),nrow = 2,dimnames=list(c("control","nueva"),c("compras","visitas")))
+m
+
+r1<-round(binom.test(m[1,1],m[1,2])$conf.int,4)
+r2<-round(binom.test(m[2,1],m[2,2])$conf.int,4)
+paste0("El ratio de compras en la web de control es:",round(m[1,1]/m[1,2],4),
+       " con un intervalo de confianza: [",r1[1],",",r1[2],"]")
+paste0("El ratio de compras en la web nueva es:",round(m[2,1]/m[2,2],4),
+       " con un intervalo de confianza: [",r2[1],",",r2[2],"]")
+```
+
+```{r}
+chisq.test(m)
+fisher.test(m)
+```
+
+Tanto el test de fisher como el chi-cuadrado nos indican que no hay
+muestras sufientes para descartar la hipótesis nula. No podemos decir
+que la nueva web haya mejorado el ratio de clicks.
+
+Si recogemos más datos:
+
+```{r}
+myweb2<-generateABdata(4000)
+```
+
+```{r}
+buy_users<-subset(myweb2,buy=="YES")
+with(buy_users,t.test(x=timespend[group=="Control"],y=timespend[group=="New"]))
+```
+
+Si somos capaces de ver que los usuarios que compran en la web nueva
+estan **menos tiempo**, eso puede indicar que es más fácil comprar.
+
+```{r}
+s0<-sum(myweb2$buy[myweb2$group=="Control"]=="YES")
+t0<-sum(myweb2$group=="Control")
+s1<-sum(myweb2$buy[myweb2$group=="New"]=="YES")
+t1<-sum(myweb2$group=="New")
+
+m<-matrix(c(s0,s1,t1,t0),nrow = 2,dimnames=list(c("control","nueva"),c("compras","visitas")))
+m
+
+r1<-round(binom.test(m[1,1],m[1,2])$conf.int,4)
+r2<-round(binom.test(m[2,1],m[2,2])$conf.int,4)
+paste0("El ratio de compras en la web de control es:",round(m[1,1]/m[1,2],4),
+       " con un intervalo de confianza: [",r1[1],",",r1[2],"]")
+paste0("El ratio de compras en la web nueva es:",round(m[2,1]/m[2,2],4),
+       " con un intervalo de confianza: [",r2[1],",",r2[2],"]")
+```
+
+Los ratio son más pequeños y apenas se solapan, parece que la web nueva
+mejora el ratio de compras. Algo que podemos comprobar con el test
+chi-cuadrado.
+
+```{r}
+chisq.test(m)
+fisher.test(m)
+```
