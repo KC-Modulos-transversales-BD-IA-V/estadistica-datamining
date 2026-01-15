@@ -1,0 +1,1111 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Relación entre variables
+
+Dos variables pueden estar relacionadas entre si de varias formas. En
+esta sección vamos a ver como podemos averiguar las relaciones que
+pueden existir entre dos variables.
+
+Pero antes veamos unos conceptos básicos:
+
+La variable $Y$ tiene una variación lineal respecto a $X$ si: $$
+Y=\beta·X+a
+$$ Donde $\beta$ y $a$ son constantes fijas que definen la relación
+entre las dos variables. Pero en cambio, no tendremos una relación
+lineal en los siguientes casos: $$
+Y=\beta·X^2+a
+$$ $$
+Y=\beta^X
+$$
+
+# Covarianza
+
+La covarianza es un valor que indica el grado de variación **lineal**
+conjunta de dos variables aleatorias respecto a sus medias.
+
+Supongamos que queremos comparar dos variables aleatorias X e Y:
+
+-   Tendremos alta covarianza (positiva) cuando, para valores altos de
+    X, tengamos mayoritariamente valores altos de Y
+-   Tendremos baja covarianza (negativa) cuando, para valores altos de
+    X, tengamos mayoritariamente valores bajos de Y
+-   Tendremos covarianza cercana a 0, para valores altos de X, los
+    valores de Y pueden ser altos o bajos por igual
+
+Su formula es la siguiente: $$
+cov(X,Y) = \frac{1}{N} \sum _{i=1}^N \left( x_i-\bar{x} \right)\left( y_i-\bar{y} \right)
+$$
+
+Recordemos la formula de la varianza: $$
+Var(x) =  \frac{1}{N} \sum _{i=1}^N \left( x_i-\bar{x} \right)^2
+$$
+
+La covarianza de una variable aleatoria consigo misma es igual a la
+varianza: $$
+cov(X,X) = Var(X)
+$$
+
+En R la calculamos con la función *cov(x,y)*
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+
+n <- 100
+x <- rnorm(n,sd=1)
+y1 <- 20*x+1+rnorm(n,sd=10)
+y2 <- rnorm(n,mean=2, sd=10)
+paste("La covarianza de las variables x, y1 es:",round(cov(x,y1),2))
+paste("La covarianza de las variables x, y2 es:",round(cov(x,y2),2))
+plot(x,y1,col='red')
+points(x,y2,col="blue")
+```
+
+En cambio en el siguiente ejemplo la covarianza falla al tratar de
+encontrar una relación entre dos variables al no ser esta lineal.
+
+```{r}
+y <- x^2
+paste("La covarianza de las variables x, y es:",round(cov(x,y),2))
+plot(x,y,col='red')
+```
+
+### Ejemplo para finanzas
+
+En el mercado bursátil, se pone un gran énfasis en reducir el riesgo
+asumido. Esto generalmente significa que estas acciones no se mueven en
+la misma dirección. Se suelen elegir acciones que tienen una menor
+covarianza entre si. Esto se suele hacer no sobre el valor de la acción
+en sí, sino sobre la tasa de retorno al final de cada día.
+
+```{r}
+suppressWarnings(require("quantmod"))
+start <- as.Date("2000-01-01")
+end <- as.Date("2021-01-01")
+TEF<-getSymbols("TEF.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+SAN<-getSymbols("SAN.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+BBVA<-getSymbols("BBVA.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+```
+
+```{r}
+candleChart(TEF.MC[1:10,])
+```
+
+```{r}
+head(TEF)
+str(TEF)
+```
+
+```{r}
+convertToDf<-function(stock){
+    valueAdjusted <- stock[,6]
+    df <- data.frame(index(valueAdjusted), valueAdjusted, row.names=1:length(valueAdjusted))
+    colnames(df) <- c("date",gsub(".Adjusted","",names(valueAdjusted)))
+    df
+}
+
+df_TEF <- convertToDf(TEF.MC)
+df_SAN <- convertToDf(SAN.MC)
+df_BBVA <- convertToDf(BBVA.MC)
+head(df_TEF)
+str(df_SAN)
+```
+
+```{r}
+df_total <- merge(df_TEF,df_SAN,by="date", all=T)
+df_total <- merge(df_total,df_BBVA,by="date", all=T)
+
+seq1 <- 1:(nrow(df_total)-1)
+seq2 <- 2:nrow(df_total)
+
+roi <- (df_total[seq2,2:ncol(df_total)]/df_total[seq1,2:ncol(df_total)]-1)*100
+
+
+head(roi)
+```
+
+```{r}
+paste("La covarianza entre las tasas de retorno del BBVA y TEF es:",
+      cov(roi$BBVA.MC,roi$TEF.MC, use="complete.obs"))
+paste("La covarianza entre las tasas de retorno del BBVA y SAN es:",
+      cov(roi$BBVA.MC,roi$SAN.MC, use="complete.obs"))
+```
+
+Como cabría esperar existe una gran covarianza entre los bancos,
+Santander y BBVA, que no se da con Telefónica. Pero la covarianza tiene
+un problema y es que no está normalizada.
+
+La covarianza entre dos variables puede ser muy alta porque la varianza
+de una de las variables es muy alta o porque existe una relación alta
+entre cada una de ellas.
+
+## Matriz de covarianza
+
+La matriz de covarianza muestra la varianza entre $n$ variables en forma
+de matriz $n \times n$, donde el valor de la celda ij es la covarianza
+de la secuencia i con la secuencia j, el valor de la diagonal es la
+varianza de la secuencia correspondiente.
+
+```{r}
+cov(cbind(x,y1,y2))
+```
+
+La matriz de covarianza nos sirve para de de un vistazo general la
+relación entre las diferentes variables. Si volvemos al caso anterior de
+las acciones se puede ver claramente que acciones están más relacionadas
+entre sí y cuales presentan una mayora varianza.
+
+```{r}
+cov(roi, use="complete.obs")
+```
+
+# Correlación
+
+La correlación es un valor que indica el grado de variación conjunta y
+**lineal** de dos variables aleatorias. Es la covarianza normalizada en
+el rango $[-1,1]$. Es una forma de ignorar la variación de cada una de
+las variables en si y centrarse únicamente en la relación que existe
+entre ambas, ya que una covarianza alta puede venir dada también porque
+una de las variables a estudiar tenga una varianza elevada.
+
+Supongamos que queremos comparar dos variables aleatorias X e Y:
+
+\* Correlación cercana a 1, para valores altos de X, tengamos
+mayoritariamente valores altos de Y
+
+\* Correlación cercana a -1, para valores altos de X, tengamos
+mayoritariamente valores bajos de Y
+
+\* Correlación cercana a 0, para valores altos de X, los valores de Y
+pueden ser altos o bajos por igual
+
+La función de correlación de Pearson es: $$
+\rho_{X,Y} = corr (X,Y) = \frac{cov(X,Y)}{\sigma_X \sigma_Y} 
+$$
+
+Al igual que con la covarianza podemos calcular una matriz de
+correlación. Se utiliza para ver de forma sencilla cual es la relación
+entre varias variables. En una matriz de correlación la diagonal será
+siempre 1 (la correlación de una variable consigo misma es 1) y el valor
+de la celda *ij* vendrá dado por la correlación de la variable i con j.
+
+En R la calculamos con la función *cor(x,y)*
+
+```{r}
+cr1<-cor(x,y1)
+cr2<-cor(x,y2)
+paste("La correlación de las variables x,y1 es:",round(cr1,2))
+paste("La correlación de las variables x,y2 es:",round(cr2,2))
+
+cr<-cor(x,y)
+paste("La correlación de las variables x,y es:",round(cr,2))
+```
+
+## Correlación no implica causalidad
+
+https://es.wikipedia.org/wiki/Cum_hoc_ergo_propter_hoc:
+
+*Cum hoc ergo propter hoc (en latín, "Con esto, por tanto a causa de
+esto") es una falacia (es decir, un argumento que parece válido, pero
+que no lo es) que se comete al inferir que dos o más eventos están
+conectados causalmente porque se dan juntos. La falacia consiste en
+inferir que existe una relación causal entre dos o más eventos por
+haberse observado una correlación estadística entre ellos. Esta falacia
+muchas veces se refuta mediante la frase «correlación no implica
+causalidad».*
+
+Que dos variables estén correladas no implica que una una es la causa de
+la otra, es decir, que haya una relación directa entre ambas.
+
+Por ejemplo, existe una correlación de 0.992558 entre la tasa de
+divorcio en el estado de Maine y el consumo de margarina por habitante:
+![](pics/correlacion-margarina-divorcio.png)
+
+Fallos comunes que pueden llevar a buscar una correlación alta: \*
+Utiliza solo la ventana de datos que te interesa. \* Compara muchas
+variables entre sí, por puro azar algunas evolucionarán a la par.
+
+Más ejemplos en
+[tylervigen](http://www.tylervigen.com/spurious-correlations).
+
+Relacionada: https://xkcd.com/552/
+
+Dos variables también pueden estar correladas entre sí, pero la
+causalidad puede ser debida a una tercera variable oculta que no vemos.
+Por ejemplo:
+
+```{r}
+set.seed(2807)
+
+x<- rnorm(100)
+y <- 2*x + 1+ rnorm(100,0,0.1)
+paste("La correlación entre x,y es",cor(x,y))
+
+
+z <- 2*x + 1+ rnorm(100,0,0.1)
+paste("La correlación entre x,z es",cor(x,z))
+
+
+paste("Aunque no existe ninguna relación directa entre z,y existe una alta correlación:", cor(y,z))
+```
+
+#### Correlación entre colesterol y ataques al corazón
+
+Existe una alta correlación en aquellos paises cuyos habitantes toman
+grasas saturadas (asociadas con un nivel de colesterol más alto) y
+aquellos cuyos número de enfermedades cardiovasculares es más elevado.
+
+Pero existe un problema en esta correlación, Francia y Finlandia
+presentan aproximadamente los mismos niveles de ingesta de grasas
+saturadas, pero los franceses tienen un porcentaje bajo de enfermedades
+cardiovasculares.
+
+Parece que hay algún otro componente en la dieta que puede estar
+relacionado con la calidad de la alimentación que es el que realmente
+influye a la hora de tener o no una enfermedad cardiovascular.
+
+[The French paradox: lessons for other
+countries](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1768013/)
+
+[Differences in Coronary Mortalit Can Be Explained by Differences in
+Cholesterol and Saturated Fat Intakes in 40 Countries but Not in France
+and Finland A
+Paradox](https://pdfs.semanticscholar.org/fb57/b6dddc3649702b9e79ae4575ad8a38970d8c.pdf)
+
+### Ejemplo de Matriz de correlación: Mercado continuo
+
+Si se decide invertir en acciones, una política conservadora consiste en
+diversificar lo máximo posible. Es decir, invertir en empresas que no
+tengan relaciones. De esta forma si un sector entra en crisis, las
+empresas de otro sector pueden no verse perjudicadas y salvaremos parte
+de nuestra inversión.
+
+Un análisis muy sencillo puede ser mediante la matriz de correlación de
+diferentes empresas. Empresas que presentan un alto nivel de correlación
+presentan subidas y bajadas muy parecidas. De esta forma, una jugada
+inteligente podría ser tener un portfolio de acciones con baja
+correlación.
+
+Veamos un ejemplo con unas pocas empresas y el cambio de moneda
+Bitcoin-Euro y el Nasdaq
+
+```{r}
+suppressWarnings(require("quantmod"))
+start <- as.Date("2000-01-01")
+end <- as.Date("2018-01-01")
+getSymbols("AAPL", src = "yahoo", from = start, to = end,auto.assign = T)
+
+
+getSymbols("BTC-EUR", src = "yahoo", from = start, to = end,auto.assign = T)
+
+getSymbols("^IXIC", src = "yahoo", from = start, to = end,auto.assign = T)
+getSymbols("TEF.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+getSymbols("VOD", src = "yahoo", from = start, to = end,auto.assign = T)
+getSymbols("SAN.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+getSymbols("BBVA.MC", src = "yahoo", from = start, to = end,auto.assign = T)
+getSymbols("TSLA", src = "yahoo", from = start, to = end,auto.assign = T)
+```
+
+```{r}
+convertToDf<-function(stock){
+    valueAdjusted<-stock[,6]
+    df<-data.frame(index(valueAdjusted),valueAdjusted,row.names = 1:length(valueAdjusted))
+    colnames(df)<-c("date",gsub(".Adjusted","",names(valueAdjusted)))
+    df
+}
+df_IXIC<-convertToDf(IXIC)
+df_AAPL<-convertToDf(AAPL)
+df_TSLA<-convertToDf(TSLA)
+df_TEF<-convertToDf(TEF.MC)
+df_VOD<-convertToDf(VOD)
+df_SAN<-convertToDf(SAN.MC)
+df_BBVA<-convertToDf(BBVA.MC)
+df_BTCEUR<-convertToDf(`BTC-EUR`)
+
+head(df_IXIC)
+```
+
+```{r}
+df_total<-merge(df_IXIC,df_AAPL,by="date",all = T)
+head(df_total)
+```
+
+```{r}
+df_total<-merge(df_total,df_TSLA,by="date",all = T)
+df_total<-merge(df_total,df_TEF,by="date",all = T)
+df_total<-merge(df_total,df_VOD,by="date",all = T)
+df_total<-merge(df_total,df_SAN,by="date",all = T)
+df_total<-merge(df_total,df_BBVA,by="date",all = T)
+df_total<-merge(df_total,df_BTCEUR,by="date",all = T)
+
+
+tail(df_total)
+```
+
+```{r}
+cor(df_total[2:ncol(df_total)],use="pairwise.complete.obs")
+```
+
+Podemos ver como Apple y Tesla están bastante correlados con el Nasdaq,
+como cabría esperar, al ser este un índice de empresas tecnológicas en
+USA.
+
+Telefónica y Vodafone se encuentran algo correlados, ambos pertenecen al
+mismo sector.
+
+Se ve como la correlación entre el banco Santander y el BBVA es alta,
+esto implica que ambas empresas tienen un comportamiento muy parecido.
+Según esto daría igual comprar acciones del Santander o del BBVA, las
+ganancias serían las mismas aproximadamente.
+
+Como cabría esperar el cambio Bitcoin-Euro se encuentra poco correlado
+con el resto de empresas. Hay una correlación con Apple y TESLA, pero
+seguramente se deba más a una casualidad, las acciones de Apple y TESLA
+han subido mucho en los últimos años igual que el Bitcoin. El hecho de
+que TESLA incorporara BTC en su cartera a mediados de febrero todavía no
+tiene peso suficiente para alterar la correlación de un año.
+
+### Si la correlación no implica causalidad, ¿qué es entonces la correlación?
+
+Para entender que implicaciones tiene la correlación hay que hacer un
+análisis causal. Es una rama de la estadística que aunque tiene ya
+varios años no se encuentra todo lo distribuida que debiera.
+
+El libro de Judea Pearl, [The book of
+Why](http://bayes.cs.ucla.edu/WHY/) es un gran libro para ayudar a
+entender realmente la rama de la estadística desde un punto de vista
+causal.
+
+<img src="http://bayes.cs.ucla.edu/WHY/Pearl-The-Book.jpg" alt="Drawing" style="width: 200px;"/>
+
+# Regresión lineal
+
+Modelo matemático usado para aproximar la relación de dependencia entre
+una variable dependiente $Y$, la variables independiente $X$ y un
+término aleatorio $\varepsilon$. Este modelo puede ser expresado como:
+
+$$
+y_i=\beta_0+\beta_1 x_i+\varepsilon_i  \quad \text{para }i=1,\dots,n
+$$
+
+```{r}
+options(repr.plot.height=5,repr.plot.width=8 , repr.plot.res = 400)
+
+n<-100
+x<-rnorm(n,sd=1)
+y<- 1+20*x+rnorm(n,mean=1,sd=10)
+
+plot(x,y)
+abline(c(1,20),col="blue")
+grid()
+```
+
+Esto significa que se puede expandir de la forma:
+
+$$
+\begin{split}
+y_1 &=\beta_0+\beta_1 x_1+\varepsilon_1  \\
+y_2 &=\beta_0+\beta_1 x_2+\varepsilon_2  \\
+\vdots& \\
+y_n&=\beta_0+\beta_1 x_n+\varepsilon_n 
+\end{split}
+$$
+
+donde: \* $y_i$: i-esimo valor de la variable dependiente \* $x_i$:
+i-esimo valor de la variable independiente \* $\beta_0, \beta_1$:
+parámetros a determinal que dado un conjunto de $x_i$ produce los
+mejores $y_i$ \* $\beta_0$ : Puede ser llamado sesgo, bias, intercept o
+término constante. Indica el corte en el eje Y \* $\beta_1$ : Puede ser
+llamado pendiente, slope. Indica cuanto aumenta Y por cada incremento de
+X \* $\varepsilon_i$: error, valor aleatorio.
+
+Podemos escribirlo en forma de matriz:
+
+$$
+\begin{bmatrix}
+ y_1 \\ 
+ y_2 \\ 
+ \vdots \\ 
+ y_n 
+\end{bmatrix}
+=
+\begin{bmatrix}
+ 1 & x_1\\ 
+ 1 & x_2 \\ 
+ \vdots & \vdots \\ 
+ 1 & x_n 
+\end{bmatrix}
+\begin{bmatrix}
+\beta_0
+\\ 
+\beta_1
+\end{bmatrix}+
+\begin{bmatrix}
+ \varepsilon_1 \\ 
+ \varepsilon_2 \\ 
+ \vdots \\ 
+ \varepsilon_n
+\end{bmatrix}
+$$ Lo que se puede simplificar como: $$
+Y=X \beta+\varepsilon
+$$
+
+Donde:
+
+-   $Y \in \mathbb{R}^{n \times 1}$
+-   $X \in \mathbb{R}^{n \times 2}$
+-   $\beta \in \mathbb{R}^{1 \times 2}$
+-   $\varepsilon \in \mathbb{R}^{n \times 1}$
+
+```{r}
+n<-10
+beta<-matrix(c(5,2),nrow = 2)
+X<-matrix(c(rep(1,n),1:n),ncol = 2, byrow = F)
+
+print("El valor de la matriz X es:")
+X
+print("El valor de la Beta es:")
+beta
+```
+
+```{r}
+print("El valor de la matriz X·Beta es:")
+X %*% beta
+```
+
+```{r}
+print("El valor final de la matriz Y es:")
+e<-rnorm(n)
+Y<-X %*% beta +e
+Y
+```
+
+```{r}
+plot(X[,2],Y,ylim = c(0,30))
+abline(beta,col="blue")
+grid()
+```
+
+## ¿Cómo calculamos $\beta$?
+
+### Definición de inversa de una matriz
+
+La inversa de una matriz una matriz cuadrada $A$ se escribe $A^-1$ y se
+define como:
+
+$$
+A^{-1} \cdot A=I=A \cdot A^{-1}
+$$
+
+Donde I es la matriz identidad: $$
+\begin{bmatrix}
+1 & 0 & \dots & 0\\ 
+0 & 1 & \dots & 0 \\ 
+\vdots &  & \ddots &  \vdots \\ 
+0 & 0  & \dots & 1
+\end{bmatrix}
+$$
+
+```{r}
+A<-matrix(c(1,3,5,2,3,4,1,7,8),nrow=3)
+print("Tenemos una matriz A:")
+A
+```
+
+```{r}
+print("La inversa de A es:")
+iA<-solve(A)
+iA
+```
+
+```{r}
+print("Si multiplicamos una matriz por su inversa obtenemos una matriz identidad")
+iA %*% A
+```
+
+Podemos usar la matriz inversa para resolver ecuaciones: $$
+\begin{split}
+u&=Av \\
+A^{-1}u&=A^{-1}Av \\
+A^{-1}u&=Iv \\
+A^{-1}u&=v \\
+\end{split}
+$$
+
+```{r}
+print("Calculamos el vector u como resultado de multiplicar A·v")
+v <- c(1,2,3)
+u <- A %*% v
+u
+```
+
+```{r}
+print("Comprobamos que multiplicando u por la inversa de A obtenemos v de vuelta:")
+iA %*% u
+```
+
+### Pseudoinversa Moore-Penrose
+
+¿Qué ocurre si la matriz que queremos invertir no es cuadrada? Entonces
+el sistema de ecuaciones no tiene una única solución o simplemente no
+tiene solución.
+
+Lo que tratamos de encontrar es la menos mala de las soluciones.
+
+Para números reales se define como: $$
+X^+ = \left( X^{\intercal} X  \right)^{-1} X^{\intercal}
+$$ Cuando: $$
+X^+X = I
+$$
+
+El problema original consistía en querer calcular $\beta$ de tal forma
+que se minimice la influencia de $\varepsilon$: $$
+Y=X \beta+\varepsilon
+$$ En nuestro sistema $\varepsilon$ es desconocido, pero sabemos que
+tiene media cero y varianza finita. Así que simplificamos el siguiente
+sistema de ecuaciones:
+
+$$
+\begin{split}
+Y=&X \beta' \\
+X^+Y=& X^+X \beta' \\
+X^+Y=& \beta' \\
+\left( X^{\intercal}X  \right)^{-1} X^{\intercal} Y =& \beta'
+\end{split}
+$$
+
+Ahora tenemos, a partir de $X$ e $Y$ una estimación $\beta'$. Podemos
+entonces, a partir de valores conocidos de $X$ calcular una estimación
+de $Y'$. $$
+Y'=X \beta'
+$$
+
+Evidentemente $Y \neq Y'$, llamaremos **residuo**(error) a la diferencia
+entre el valor real y el valor estimado : $\varepsilon' = Y-Y'$.
+
+El método anterior garantiza que el error cuadrático medio sea mínimo.
+$$
+{1 \over n} \sum_{i=0}^n{(Y-Y')^2}
+$$
+
+```{r}
+print("El valor estimado de beta")
+est_beta <- solve(t(X) %*% X) %*% t(X) %*% Y
+est_beta
+```
+
+```{r}
+X
+```
+
+```{r}
+est_Y <- X %*% est_beta
+plot(X[,2],Y,col="blue")
+points(X[,2],est_Y,col="red")
+abline(est_beta,col="red")
+abline(c(5,2),col="black")
+
+
+legend(1,30,legend=c("Y","Y'"),col=c("blue","red"),pch=1)
+grid()
+t(Y-est_Y)
+```
+
+```{r}
+paste("El error cuadrático medio es:",mean((Y-est_Y)^2))
+```
+
+### Método en R
+
+En R existe la función lm (linear model) que se utiliza para calcular la
+dependencia entre variables
+
+```{r}
+n<-10
+beta<-matrix(c(5,2),nrow = 2)
+e<-rnorm(n,sd=1)
+X<-matrix(c(rep(1,n),1:n),ncol = 2, byrow = F)
+Y<-X %*% beta +e
+```
+
+```{r}
+datos <- data.frame(Y=Y,X=X[,2])
+head(datos)
+```
+
+```{r}
+model <- lm(data=datos, formula= Y ~ X)
+summary(model)
+```
+
+```{r}
+model$coefficients
+```
+
+## Fiabilidad de los coeficientes
+
+Suponiendo que los residuos siguen una distribución gaussiana, se puede
+calcular la varianza de cada uno de los coeficientes como: $$
+Var [ \beta' | X ] = s^2 (X^TX)^{-1} = \frac{\varepsilon^2}{n-p} ·  (X^TX)^{-1} = \frac{\sum(Y_i-Y')^2}{n-p} ·  (\sum(X_i-\overline{X}) )^{-1}
+$$
+
+Donde: \* p es el número de grados de liberdad, de coeficientes, en este
+caso son 2: Intersección y la pendiente. \* n es el número de muestras
+
+La media de los coeficientes vienen dados por el vector $\beta'$. Con la
+media y la varianza podemos calcular la probabilidad de que el valor de
+la media estimado esté muy desviado de 0 por puro azar. Eso aparece con
+el valor Pr(\>\|t\|) en el summary del modelo. Cuanto menos sea este
+valor más fiable será. Más adelante veremos que significa esta
+probabilidad en detalle, llamada p-valor.
+
+```{r}
+vcov_matrix<-as.numeric(t(model$residuals)%*%model$residuals/(length(model$residuals)-2))*solve(t(X)%*%X)
+# vcov_matrix <- vcov(model)
+# 1/sum((X[,2]-colMeans(X)[2])^2) == solve(t(X)%*%X)[2,2]
+
+paste("p-valor para intersección:",(1-pt(model$coefficients[1]/sqrt(diag(vcov_matrix))[1],8))*2)
+paste("p-valor para pendiente:",(1-pt(model$coefficients[2]/sqrt(diag(vcov_matrix))[2],8))*2)
+```
+
+```{r}
+vcov_matrix
+```
+
+Podemos calcular el margen de error para la intersección conociendo su
+desviación típica y que sigue una distribución t-student.
+
+Porque para un intervalo de confianza del 95% la formula de los márgenes
+superior e inferor es:
+
+$$
+inf_{0.95}=Qt(0.975)·\sigma + \bar x \\
+sup_{0.95}=Qt(0.025)·\sigma + \bar x
+$$
+
+```{r}
+library(ggplot2)
+options(repr.plot.height=2,repr.plot.width=6)
+
+mydt<-function(x,df,mn,sd){
+    dt((x-mn)/sd,df)
+}
+df<-n-2
+
+ggplot(data=datos, aes(x=X)) +     
+    stat_function(fun=mydt,args = list(df = df,mn=model$coefficients[1],sd=sqrt(diag(vcov_matrix))[1]),color="#2222BB")+
+    geom_vline(xintercept=qt(0.975,df,lower.tail = F)*sqrt(diag(vcov_matrix))[1]+model$coefficients[1])+
+    geom_vline(xintercept=qt(0.025,df,lower.tail = F)*sqrt(diag(vcov_matrix))[1]+model$coefficients[1])+
+    xlim(-10,40)
+```
+
+Con R podemos calcular esto automáticamente mediante el comando
+*confint*:
+
+```{r}
+cnf_int<-confint(model)
+cnf_int
+```
+
+**Opción interval = 'confidence':**
+
+Un **intervalo de confianza** de la predicción es un rango que
+probablemente contiene el **valor medio de la variable dependiente**
+dados los valores específicos de las variables independientes. Estos
+intervalos proporcionan un rango para el promedio de la población. Estos
+rangos no dicen nada sobre la distribución de los puntos de datos
+individuales alrededor de la media de la población.
+
+**Opción interval = 'prediction':**
+
+Un **intervalo de predicción** es un rango que probablemente contiene el
+**valor de la variable dependiente** para una sola observación nueva
+dados los valores específicos de las variables independientes. Con este
+tipo de intervalo, estamos prediciendo rangos para observaciones
+individuales en lugar del valor medio.
+
+```{r}
+pred_conf<-predict(model,datos,interval = 'confidence')
+head(pred_conf)
+pred<-predict(model,datos,interval = 'prediction')
+head(pred)
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+
+est_Y <- X %*% model$coefficients
+plot(X[,2],Y,col="blue")
+#points(X[,2],est_Y,col="red")
+#lines(X[,2],pred[,"fit"],col="red")
+#lines(X[,2],pred_conf[,"lwr"],col="black")
+#lines(X[,2],pred_conf[,"upr"],col="black")
+#lines(X[,2],pred[,"lwr"],col="gray")
+#lines(X[,2],pred[,"upr"],col="gray")
+
+
+#abline(c(5,2),col="green")
+```
+
+## Coeficiente de determinación $R^2$
+
+Proporciona una medida de como de bien nuestra medida sigue al modelo.
+Se calcula mediante:
+
+$$
+R^2=1-\frac{SS_{res}}{SS_{tot}}=1-\frac{MSE(y,y')}{VAR(y)}
+$$
+
+Donde $SS_{res}$ es la suma del cuadrado de los residuos: $$
+SS_{res}=\sum_i (y_i-y_i')^2
+$$
+
+y $SS_{tot}$ es proporcional a la varianza de $Y$:
+
+$$
+SS_{tot}=\sum_i (y_i-\bar{y})^2
+$$
+
+Cuanto más cercano a $1$ mejor seguirá la predicción a los datos reales.
+
+Responde a la pregunta, ¿como de mejor es mi modelo respecto a uno que
+siempre devuelva el valor medio?
+
+```{r}
+Rsq <- 1-(sum((Y-est_Y)^2))/(sum((Y-mean(Y))^2))
+print(paste("El coeficiente de determinación es:",Rsq))
+```
+
+```{r}
+summary(model)
+```
+
+Nuevo ejemplo:
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+n<-40
+xn<-rnorm(n,sd=1)
+yn<-xn*2+rnorm(n,mean=2,sd=10)
+datos<-data.frame(y=yn,X=xn)
+model=lm(datos, formula=y~X+0)
+
+
+plot(xn,yn,col="blue")
+abline(c(0,model$coefficients),col="red")
+summary(model)$r.squared
+```
+
+```{r}
+summary(model)
+```
+
+```{r}
+options(repr.plot.height=2,repr.plot.width=6)
+
+vcov_matrix<-as.numeric(t(model$residuals)%*%model$residuals/(length(model$residuals)-2))*solve(t(xn)%*%xn)
+
+
+ggplot(data=datos, aes(x=X)) +     
+    stat_function(fun=mydt,args = list(df = df,mn=model$coefficients[1],sd=sqrt(diag(vcov_matrix))[1]),color="#2222BB")+
+    geom_vline(xintercept=qt(0.975,df)*sqrt(diag(vcov_matrix))[1]+model$coefficients[1])+
+    geom_vline(xintercept=qt(0.025,df)*sqrt(diag(vcov_matrix))[1]+model$coefficients[1])+
+    xlim(-20,20)
+```
+
+```{r}
+cnf_int<-confint(model)
+cnf_int
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+
+datos<-datos[order(datos$X),]
+pred<-predict(model,datos,interval="confidence")
+est_Y <- pred[,"fit"]
+plot(xn,yn,col="blue")
+points(datos$X,est_Y,col="red")
+
+#lines(datos$X,pred[,"fit"],col="red")
+#lines(datos$X,pred[,"lwr"],col="black")
+#lines(datos$X,pred[,"upr"],col="black")
+#abline(c(0,cnf_int[2]),col="gray")
+#abline(c(0,cnf_int[1]),col="gray")
+
+```
+
+Relacionado: https://xkcd.com/1725/
+
+### Ejemplo: Evolución de la producción de cereales por hectárea en Italia
+
+El siguiente gráfico muestra como ha evolucionado la producción de
+cereales por hectarea cultivada en italia desde 1960 hasta 2018.
+
+Alrededor del mundo se observa una tendencia muy parecida a partir de
+los años 60, nuevas especies híbridas de cereales junto con nuevos
+fertilizantes químicos y pesticidas, aumentarion la producción agrícola
+en todo el mundo en lo que se acabó llamando la revolución verde. El
+padre de este movimiento es considerado Norman Borlaug, premio nobel de
+la paz en 1970.
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Norman_Borlaug.jpg/220px-Norman_Borlaug.jpg)
+
+```{r}
+library(ggplot2)
+yieldKgIt<-read.csv("data/yieldKgIt.csv")
+```
+
+```{r}
+model <- lm(data=yieldKgIt, formula=yieldCereal~DATE)
+summary(model)
+yieldKgIt$predicted <- predict(model, yieldKgIt)
+
+ggplot(data=yieldKgIt,aes(x=DATE))+
+   geom_point(aes(y=yieldCereal))+
+   geom_line(aes(y=predicted),color="blue")+
+   theme_bw()+xlab("Año")+ylab("Kg/ha")+ggtitle("Producción de cereales")
+```
+
+Cada año, de media, la producción de cereales aumenta en 67.5kg/ha,
+sigue una curva lineal con bastante poco error. En la siguiente gráfica
+se ve los residuos:
+
+```{r}
+ggplot(data=yieldKgIt,aes(x=DATE,y=yieldCereal-predicted))+   
+   geom_line(color="blue")+
+   geom_point(color="red")+
+   theme_bw()+xlab("Año")+ylab("Kg/ha")+ggtitle("Residuos")
+```
+
+¿Porqué a veces la producción de cereales es inferior o superior con la
+curva esperada? ¿Podría haber factores meteorológicos involucrados?
+
+No tenemos el histórico de meteorología de toda italia, pero podemos
+aproximarlo con el histórico de la ciudad de Bolonia.
+
+```{r}
+residuals<-data.frame(DATE=yieldKgIt$DATE,res=model$residuals)
+weather<-read.csv("data/ITE00100550.csv")
+wc<-merge(weather[,c("DATE","PRCP")],residuals,by="DATE")
+cor(wc$PRCP,wc$res,use="complete.obs")
+#ggplot(wc,aes(x=DATE,y=PRCP))+geom_point()
+```
+
+# Regresión lineal múltiple
+
+Hasta ahora habíamos visto como el cambio en una variable puede afectar
+a otra, pero ¿qué ocurre si son varias las variables que alteran el
+comportamiento de nuestra variable objetivo? En este caso necesitamos
+utilizar la regresión lineal múltiple.
+
+Es un modelo matemático usado para aproximar la relación de dependencia
+entre una variable dependiente $Y$, las variables independientes $X_i$ y
+un término aleatorio $\varepsilon$. Este modelo puede ser expresado
+como:
+
+$$
+Y=\beta_1 X_1+\beta_2 X_2+\cdots +\beta_p X_p+\varepsilon = \sum \beta_k X_k+\varepsilon
+$$
+
+donde:
+
+-   $Y$: variable dependiente
+-   $X_1,X_2,\cdots ,X_p$: variables independientes
+-   $\beta_0, \beta_1,\beta_2,\cdots ,\beta_p$: parámetros a determinal
+    que dado un $X_k$ produce el mejor posible $Y$
+-   $\varepsilon$: error, valor aleatorio.
+
+Condiciones para aplicarlo: 1. Que la relación entre las variables sea
+lineal. 2. Que los errores en la medición de $X_k$ sean independientes
+entre sí. 3. Que los errores tengan varianza constante.
+(https://es.wikipedia.org/wiki/Heterocedasticidad) 4. Que los errores
+tengan una media aritmética igual a cero.
+
+Para calcular el valor óptimo de $\beta$ vamos a utilizar un poco de
+álgebra linea. $$
+\begin{split}
+y_1 &=\beta_1 x_{11}+\beta_2 x_{12}+\beta_3 x_{13}+\cdots+\beta_p x_{1p}+\varepsilon_1  \\
+y_2 &=\beta_1 x_{21}+\beta_2 x_{22}+\beta_3 x_{23}+\cdots+\beta_p x_{2p}+\varepsilon_1  \\
+\vdots& \\
+y_n &=\beta_1 x_{n1}+\beta_2 x_{n2}+\beta_3 x_{n3}+\cdots+\beta_p x_{np}+\varepsilon_1  \\
+\end{split}
+$$
+
+Podemos escribirlo en forma de matriz: $$
+\begin{bmatrix}
+ y_1 \\ 
+ y_2 \\ 
+ \vdots \\ 
+ y_n 
+\end{bmatrix}
+=
+\begin{bmatrix}
+ x_{11} & x_{12} & x_{13} & \cdots & x_{1p} \\ 
+ x_{21} & x_{22} & x_{23} & \cdots & x_{2p} \\ 
+ \vdots & & & \ddots & \vdots \\ 
+ x_{n1} & x_{n2} & x_{n3} & \cdots & x_{np}
+\end{bmatrix}
+\begin{bmatrix}
+\beta_1 \\ 
+\beta_2 \\
+\beta_3 \\
+\vdots  \\
+\beta_p
+\end{bmatrix}+
+\begin{bmatrix}
+ \varepsilon_1 \\ 
+ \varepsilon_2 \\ 
+ \vdots \\ 
+ \varepsilon_n
+\end{bmatrix}
+$$ Lo que se puede simplificar como: $$
+Y=X \beta+\varepsilon
+$$
+
+Al igual que en el caso anterior podemos estimar $\beta$ con: $$
+\beta=\left( X^{\intercal}X  \right)^{-1} X^{\intercal} Y
+$$
+
+```{r}
+n<-10
+x1<-rep(1,n)
+x2<-seq(2,to=11,length.out = n)
+x3<-seq(0.3,to=5,length.out = n)^2
+X<-matrix(c(x1,x2,x3),nrow=n,byrow = F)
+print("El valor de la matriz X es:")
+X
+beta<-matrix(c(5,2,14),nrow=3)
+print("El valor de la matriz Y es:")
+Y<-X %*% beta+rnorm(n)
+Y
+```
+
+```{r}
+print("El valor estimado de beta es:")
+est_beta<-solve(t(X) %*% X) %*% t(X) %*% Y
+est_beta
+
+print("El valor real de beta es:")
+beta
+```
+
+Esto también se puede resolver con la función *lm* de R. Ignoramos el
+vector *x1* porque la función por defecto ya añade el término.
+
+```{r}
+lm(Y~x2+x3)
+```
+
+### Ejemplo: Peso de los niños al nacer
+
+Este dataset contien información de bebes recien nacidos y sus padres.
+Podemos usarlo como regresión para ver cuales son los factores que más
+afectan al peso del niño.
+
+http://people.reed.edu/\~jones/141/BirthWgt.html
+
+Tenemos las siguientes variables que vamos a utilizar:
+
+| Nombre      | Variable                                       |
+|-------------|------------------------------------------------|
+| Birthweight | Peso al nacer (libras)                         |
+| Gestation   | Semanas que duró la gestación                  |
+| motherage   | Edad de la madre                               |
+| mnocig      | Número de cigarros al día fumados por la madre |
+| mheight     | Altura de la madre (pulgadas)                  |
+
+```{r}
+bwt<-read.csv("data/birthweight_reduced.csv")
+#str(bwt)
+```
+
+```{r}
+library(GGally)
+ggpairs(bwt[,c("Gestation","motherage","mnocig","mheight","Birthweight")],
+       #lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
+       lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
+       )
+```
+
+```{r}
+model<-lm(data=bwt, formula = Birthweight ~ Gestation+motherage+mnocig+mheight)
+summary(model)
+```
+
+Los valores que más influencia parecen tener son aquellos que presentan
+un pvalor (Pr) más bajo. El número de \* que hay a la derecha de cada
+fila indica su grado de confianza.
+
+La variable que más parece influir es la gestación, parece que por cada
+semana de gestación el bebé gana 0.33062 libras de peso. En cambio por
+cada cigarro al día que fuma la madre el peso del bebé podría disminuir
+en 0.02613 libras. La altura de la madre también parece tener cierta
+incluencia, por cada pulgada más que mida la madre el bebé pesará
+0.13329 libras más. En cambio la edad de la madre parece no tener ningún
+efecto estadístico significativo.
+
+```{r}
+model<-lm(data=bwt, formula = Birthweight ~ Gestation+mnocig+mheight)
+summary(model)
+```
+
+```{r}
+confint(model)
+```
+
+## Dataset Anscombe
+
+Este dataset nos muestra que no nos podemos fiar simplemente por los
+estimadores de las variables, la representación gráfica nos proporciona
+una visión más completa.
+
+Existen datasets similares como el datasaurio:
+https://www.autodesk.com/research/publications/same-stats-different-graphs
+
+```{r}
+library(datasets)
+anscombe
+```
+
+```{r}
+mean(anscombe$y1)
+mean(anscombe$y2)
+mean(anscombe$y3)
+mean(anscombe$y4)
+```
+
+```{r}
+var(anscombe$y1)
+var(anscombe$y2)
+var(anscombe$y3)
+var(anscombe$y4)
+```
+
+```{r}
+library(ggplot2)
+options(repr.plot.height=3,repr.plot.width=4 , repr.plot.res = 400)
+
+ggplot(anscombe)+
+ geom_point(aes(x=x1,y=y1),color="red")+
+ geom_point(aes(x=x2,y=y2),color="green")+
+ geom_point(aes(x=x3,y=y3),color="blue")+
+ geom_point(aes(x=x4,y=y4),color="black")
+```
+
+```{r}
+library(grid)
+library(gridExtra)
+options(repr.plot.height=4,repr.plot.width=8 , repr.plot.res = 200)
+
+g1<-ggplot(anscombe,aes(x=x1,y=y1))+geom_point(color="red")+geom_smooth(method="lm",color="grey",se=F)
+g2<-ggplot(anscombe,aes(x=x2,y=y2))+geom_point(color="blue")+geom_smooth(method="lm",color="grey",se=F)
+g3<-ggplot(anscombe,aes(x=x3,y=y3))+geom_point(color="blue")+geom_smooth(method="lm",color="grey",se=F)
+g4<-ggplot(anscombe,aes(x=x4,y=y4))+geom_point(color="blue")+geom_smooth(method="lm",color="grey",se=F)
+ 
+
+grid.arrange(g1, g2, g3, g4,nrow = 2,top = textGrob("Anscombe dataset",gp=gpar(fontsize=20,font=3)))
+```
