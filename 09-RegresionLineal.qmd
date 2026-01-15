@@ -1,0 +1,1637 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 80
+---
+
+# Regresión lineal
+
+## Regresión lineal simple
+
+Modelo matemático usado para aproximar la relación de dependencia entre una
+variable dependiente $Y$, la variables independiente $X$ y un término aleatorio
+$\varepsilon$. Este modelo puede ser expresado como:
+
+$$
+y_i=\beta_0+\beta_1 x_i+\varepsilon_i  \quad \text{para }i=1,\dots,n
+$$
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6,repr.plot.res = 200)
+
+n<-100
+x<-seq(-5,5,length.out = n)
+df<-data.frame(x,y = 20*x+1+rnorm(n,mean=1,sd=10))
+model <- lm(y~x,data=df)
+plot(df$x,df$y)
+lines(df$x,predict(model,df),col="red")
+grid()
+```
+
+Esto significa que se puede expandir de la forma: $$
+\begin{split}
+y_1 &=\beta_0+\beta_1 x_1+\varepsilon_1  \\
+y_2 &=\beta_0+\beta_1 x_2+\varepsilon_2  \\
+\vdots& \\
+y_n&=\beta_0+\beta_1 x_n+\varepsilon_n 
+\end{split}
+$$
+
+donde:
+
+-   $y_i$: i-esimo valor de la variable dependiente
+-   $x_i$: i-esimo valor de la variable independiente
+-   $\beta_0, \beta_1$: parámetros a determinal que dado un conjunto de $x_i$
+    produce los mejores $y_i$
+-   $\beta_0$: Puede ser llamado sesgo, bias, intercept o término constante.
+    Indica el corte en el eje Y
+-   $\beta_1$ : Puede ser llamado pendiente, slope. Indica cuanto aumenta Y por
+    cada incremento de X
+-   $\varepsilon_i$: error, valor aleatorio.
+
+Podemos escribirlo en forma de matriz:
+
+$$
+\begin{bmatrix}
+ y_1 \\ 
+ y_2 \\ 
+ \vdots \\ 
+ y_n 
+\end{bmatrix}
+=
+\begin{bmatrix}
+ 1 & x_1\\ 
+ 1 & x_2 \\ 
+ \vdots & \vdots \\ 
+ 1 & x_n 
+\end{bmatrix}
+\begin{bmatrix}
+\beta_0
+\\ 
+\beta_1
+\end{bmatrix}+
+\begin{bmatrix}
+ \varepsilon_1 \\ 
+ \varepsilon_2 \\ 
+ \vdots \\ 
+ \varepsilon_n
+\end{bmatrix}
+$$ Lo que se puede simplificar como: $$
+Y=X \beta+\varepsilon
+$$
+
+Donde:
+
+-   $Y \in \mathbb{R}^{n \times 1}$
+-   $X \in \mathbb{R}^{n \times 2}$
+-   $\beta \in \mathbb{R}^{1 \times 2}$
+-   $\varepsilon \in \mathbb{R}^{n \times 1}$
+
+Podemos usar la matriz inversa para resolver ecuaciones: $$
+\begin{split}
+Y &= X \beta \\
+X^{-1}Y&=X^{-1}X \beta \\
+X^{-1}Y&=I\beta \\
+X^{-1}Y&=\beta \\
+\end{split}
+$$
+
+### Pseudoinversa Moore-Penrose
+
+¿Qué ocurre si la matriz que queremos invertir no es cuadrada? Entonces el
+sistema de ecuaciones no tiene una única solución o simplemente no tiene
+solución.
+
+Lo que tratamos de encontrar es la menos mala de las soluciones.
+
+Para números reales se define como:
+
+$$
+X^+ = \left( X^{\intercal} X  \right)^{-1} X^{\intercal}
+$$ Cuando: $$
+X^+X = I
+$$
+
+El problema original consistía en querer calcular $\beta$ de tal forma que se
+minimice la influencia de $\varepsilon$: $$
+Y=X \beta+\varepsilon
+$$ En nuestro sistema $\varepsilon$ es desconocido, pero sabemos que tiene media
+cero y varianza finita. Así que simplificamos el siguiente sistema de
+ecuaciones:
+
+$$
+\begin{split}
+Y=&X \hat{\beta} \\
+X^+Y=& X^+X \hat{\beta} \\
+X^+Y=& \hat{\beta} \\
+X^+Y=& \hat{\beta} \\
+\left( X^{\intercal}X  \right)^{-1} X^{\intercal} Y =& \hat{\beta}
+\end{split}
+$$
+
+Ahora tenemos, a partir de $X$ e $Y$ una estimación $\hat{\beta}$. Podemos
+entonces, a partir de valores conocidos de $X$ calcular una estimación de
+$\hat{Y}$. $$
+\hat{Y}=X \hat{\beta}
+$$
+
+Evidentemente $Y \neq \hat{Y}$, llamaremos **residuo**(error) a la diferencia
+entre el valor real y el valor estimado : $Y-\hat{Y}$.
+
+El método anterior garantiza que el error cuadrático medio sea mínimo. $$
+MSE = {1 \over n} \sum_{i=0}^n{(Y-\hat{Y})^2}
+$$
+
+Es decir, nuestra tarea consiste en **minimizar** la función $MSE$ para que
+nuestro modelo $\hat{Y}$ sea **óptimo**. La función MSE es convexa y cuadrática.
+
+#### Coeficiente de determinación $R^2$
+
+Proporciona una medida de como de bien nuestra medida sigue al modelo. Se
+calcula mediante: $$
+R^2=1-\frac{SS_{res}}{SS_t}
+$$
+
+Donde $SS_{res}$ es la suma del cuadrado de los residuos: $$
+SS_{res}=\sum_i (y_i-\hat {y_i})^2
+$$
+
+y $SS_{tot}$ es proporcional a la varianza de $Y$:
+
+$$
+SS_{tot}=\sum_i (y_i-\bar{y})^2
+$$
+
+Cuanto más cercano a $1$ mejor seguirá la predicción a los datos reales.
+
+### Descenso por gradientes
+
+Vamos a tratar de minimizar la función MSE con lo que hemos aprendido del
+descenso de gradientes:
+
+```{r}
+library(pracma)
+library(plotrix)
+
+mymodel<-function(x,beta1,beta2){beta1+x*beta2}
+
+mse<-function(beta1,beta2){
+    out<-rep(NA,length=length(beta1))
+    for(i in 1:length(beta1)){
+        out[i]<-sum((df$y-mymodel(df$x,beta1[i],beta2[i]))^2)/nrow(df)
+    }
+    out
+}
+
+beta1 <- seq(-20,20,length=100)
+beta2 <- seq(-10,40,length=100)
+z <- outer(beta1,beta2,mse)
+image(beta1,beta2,z,col = terrain.colors(39))
+contour(beta1,beta2,z,add=T)
+
+
+myfuncVector<-function(x){ mse(x[1],x[2]) }
+
+x_0 <- c(-10,-7)
+delta <- 0.01
+#delta <- 1
+criterio_convergencia<-1e-4
+
+x_historico<-data.frame(x=x_0[1],y=x_0[2])
+for (i in 1:5000){
+    g <- grad(myfuncVector,x_0)
+    #g <- inv(hessian(myfuncVector,x_0)) %*% as.matrix(grad(myfuncVector,x_0),cols=1)
+    if(abs(sum(g))<criterio_convergencia){
+        break;
+    }
+    x_new <- x_0 - g*delta     
+    x_0 <- x_new
+    x_historico<-rbind(x_historico,data.frame(x=x_0[1],y=x_0[2]))
+}
+nrow(x_historico)
+print(x_0)
+points(x_historico$x,x_historico$y,col="black")
+color.scale.lines(x_historico$x,x_historico$y,c(1,1,0),0,c(0,1,1),colvar=1:nrow(x_historico),lwd=3)
+```
+
+### Ejemplo Regresión lineal:
+
+```{r}
+library(MASS)
+animals <- unique(rbind(Animals, mammals))
+head(animals)
+```
+
+```{r}
+library(ggplot2)
+ggplot(animals[animals$body<1000,],aes(x=body,y=brain))+geom_point()
+```
+
+```{r}
+model<-lm(brain~body, data=animals)
+summary(model)
+```
+
+```{r}
+ggplot(animals,aes(x=body,y=brain))+geom_point()+
+    scale_x_continuous(trans='log10')+
+    scale_y_continuous(trans='log10')
+```
+
+```{r}
+animals[animals$body>1000,]
+```
+
+```{r}
+library(dplyr)
+library(tibble)
+
+ggplot(animals %>% rownames_to_column(var = "especie"),aes(x=body,y=brain))+
+    scale_x_continuous(trans='log10')+
+    scale_y_continuous(trans='log10')+geom_text(aes(label=especie))
+```
+
+```{r}
+animals %>% rownames_to_column(var = "especie") %>% 
+    mutate(log_body=log10(body)) %>%
+    mutate(log_brain=log10(brain)) -> animals_log
+```
+
+```{r}
+model <- lm(log_brain ~ log_body, data = animals_log)
+summary(model)
+```
+
+```{r}
+model$coefficients
+```
+
+```{r}
+ggplot(animals_log ,aes(x=body,y=brain))+    
+    scale_x_continuous(trans='log10')+
+    scale_y_continuous(trans='log10')+geom_text(aes(label=especie))+
+    geom_point(color='red')+
+    geom_abline(slope = model$coefficients[2], intercept = model$coefficients[1])
+```
+
+```{r}
+animals_log$pred_log_brain <- predict(model, animals_log)
+animals_log$pred_brain <- 10^predict(model, animals_log)
+
+animals_log$residual <- animals_log$log_brain - animals_log$pred_log_brain
+animals_log$residual <- model$residuals
+head(animals_log)
+```
+
+```{r}
+hist(animals_log$residual)
+```
+
+```{r}
+animals_log %>% mutate(abs_residual=abs(residual)) %>% arrange(desc(abs_residual)) %>% top_n(10)
+```
+
+El peso medio de un Neanderthal podría rondar los
+72kg(https://en.wikipedia.org/wiki/Neanderthal_anatomy), y el peso de su cerebro
+alrededor de 1400g
+(https://www.scientificamerican.com/article/rambling-road-to-humanity/). ¿Cómo
+encaja esto en nuestro modelo?
+
+```{r}
+peso <- 72
+log_brain <- predict(model, data.frame(log_body=log10(peso)))
+paste("El peso esperado sería ",10^log_brain,'gramos')
+```
+
+```{r}
+animals_log$especie
+```
+
+El peso de un leon macho adulto adulto son 170kg, y su tamaño de cerebro sería
+240g https://faculty.washington.edu/chudler/facts.html
+
+```{r}
+peso <- 170
+log_brain <- predict(model, data.frame(log_body=log10(peso)))
+paste("El peso esperado sería ",10^log_brain,'gramos')
+```
+
+```{r}
+# Para una rata de 400g el tamaño de su cerebro esperado sería de 2g, nuestro modelo dice:
+
+peso <- 0.4
+log_brain <- predict(model, data.frame(log_body=log10(peso)))
+paste("El peso esperado sería ",10^log_brain,'gramos')
+```
+
+## Regresión lineal múltiple
+
+Ahora ahora habíamos visto como encontrar como el cambio en una variable puede
+afectar a otra, pero ¿qué ocurre si son varias las variables que alteran el
+comportamiento de nuestra variable objetivo? En este caso necesitamos utilizar
+la regresión lineal múltiple.
+
+Es un modelo matemático usado para aproximar la relación de dependencia entre
+una variable dependiente $Y$, las variables independientes $X_i$ y un término
+aleatorio $\varepsilon$. Este modelo puede ser expresado como:
+
+$$
+Y=\beta_1 X_1+\beta_2 X_2+\cdots +\beta_p X_p+\varepsilon = \sum \beta_k X_k+\varepsilon
+$$
+
+donde:
+
+-   $Y$: variable dependiente
+
+-   $X_1,X_2,\cdots ,X_p$: variables independientes
+
+-   $\beta_0, \beta_1,\beta_2,\cdots ,\beta_p$: parámetros a determinal que dado
+    un $X_k$ produce el mejor posible $Y$ \* $\varepsilon$: error, valor
+    aleatorio.
+
+Condiciones para aplicarlo:
+
+1\. Que la relación entre las variables sea lineal.
+
+2\. Que los errores en la medición de $X_k$ sean independientes entre sí.
+
+3\. Que los errores sigan una distribución normal de media 0
+
+4\. Que la varianza del error sea constante, se cumple heterocedasticidad
+
+Para calcular el valor óptimo de $\beta$ vamos a utilizar un poco de álgebra
+linea. $$
+\begin{split}
+y_1 &=\beta_1 x_{11}+\beta_2 x_{12}+\beta_3 x_{13}+\cdots+\beta_p x_{1p}+\varepsilon_1  \\
+y_2 &=\beta_1 x_{21}+\beta_2 x_{22}+\beta_3 x_{23}+\cdots+\beta_p x_{2p}+\varepsilon_1  \\
+\vdots& \\
+y_n &=\beta_1 x_{n1}+\beta_2 x_{n2}+\beta_3 x_{n3}+\cdots+\beta_p x_{np}+\varepsilon_1  \\
+\end{split}
+$$
+
+Podemos escribirlo en forma de matriz: $$
+\begin{bmatrix}
+ y_1 \\ 
+ y_2 \\ 
+ \vdots \\ 
+ y_n 
+\end{bmatrix}
+=
+\begin{bmatrix}
+ x_{11} & x_{12} & x_{13} & \cdots & x_{1p} \\ 
+ x_{21} & x_{22} & x_{23} & \cdots & x_{2p} \\ 
+ \vdots & & & \ddots & \vdots \\ 
+ x_{n1} & x_{n2} & x_{n3} & \cdots & x_{np}
+\end{bmatrix}
+\begin{bmatrix}
+\beta_1 \\ 
+\beta_2 \\
+\beta_3 \\
+\vdots  \\
+\beta_p
+\end{bmatrix}+
+\begin{bmatrix}
+ \varepsilon_1 \\ 
+ \varepsilon_2 \\ 
+ \vdots \\ 
+ \varepsilon_n
+\end{bmatrix}
+$$ Lo que se puede simplificar como: $$
+Y=X \beta+\varepsilon
+$$
+
+Al igual que en el caso anterior podemos estimar $\beta$ con: $$
+\beta=\left( X^{\intercal}X  \right)^{-1} X^{\intercal} Y
+$$
+
+```{r}
+n<-20
+x<-seq(-10,30,length.out = n)
+df<-data.frame(x,y = x-3*x-2*x^2+0.1*x^3+1+rnorm(n,mean=1,sd=80))
+model <- lm(y~poly(x,3),data=df)
+model$coef
+options(repr.plot.height=4,repr.plot.width=6)
+
+plot(df$x,df$y)
+lines(df$x,predict(model,df),col="red")
+grid()
+```
+
+Esta fórmula nos garantiza que el error (residuo) cuadrático medio sea mínimo:
+$$
+MSE = {1 \over n} \sum_{i=0}^n{(Y-\hat{Y})^2}
+$$
+
+Es decir, nuestra tarea consiste en **minimizar** la **función de coste**
+($MSE$) para que nuestro modelo $\hat{Y}$ sea **óptimo**.
+
+## Coeficiente de determinación $R^2$
+
+Proporciona una medida de como de bien nuestra medida sigue al modelo. Se
+calcula mediante:
+
+$$
+R^2=1-\frac{SS_{res}}{SS_{tot}}=1-\frac{MSE(y,y')}{VAR(y)}
+$$
+
+Donde $SS_{res}$ es la suma del cuadrado de los residuos: $$
+SS_{res}=\sum_i (y_i-y_i')^2
+$$
+
+y $SS_{tot}$ es proporcional a la varianza de $Y$:
+
+$$
+SS_{tot}=\sum_i (y_i-\bar{y})^2
+$$
+
+Cuanto más cercano a $1$ mejor seguirá la predicción a los datos reales.
+
+```{r}
+myrsquared<-function(Y,est_Y){
+    Rsq <- 1-(sum((Y-est_Y)^2))/(sum((Y-mean(Y))^2))
+    return(Rsq)
+}
+```
+
+## Generalización
+
+La habilidad de obtener un resultado en datos no observados se llama
+**generalización**.
+
+El objetivo en estadística era encontrar un modelo que mejor encajara con los
+datos observados, era un problema de optimización pura. En *Data Mining*
+queremos un modelo para hacer predicciones, eso significa que necesitamos un
+modelo que funcione lo mejor posible con **datos que no hemos observado nunca**.
+
+Es por ello que los datos se dividen en como mínimo dos grupos: \* Datos de
+**entrenamiento**: Son los datos con los que entrenaremos nuestro modelo. \*
+Datos de **test**: Son los datos con los que comprobaremos la calidad de nuestro
+modelo. Son datos que el modelo no ha visto nunca.
+
+Veamos un ejemplo, supongamos que tenemos los siguientes datos
+
+```{r}
+library(ggplot2)
+x<-c(-1.1,-1.05,0.99,0.95,-0.5,-0.55,0,0.1,0.7,0.71,0.9,0.91,1.5,1.85,1.95,1.99,2,2.1,3,3.1,-0.20,0.04,1.21,1.59,2.23,2.97)
+y<-c(17.462034,17.543560,17.044042,13.444434,9.866625,10.191937,9.425260,9.998468,13.910648,13.645024,15.083907,14.610008,16.161246,16.482340,17.106625,15.919612,15.488990,14.781905,15.162828,19.362935,9.24160,10.20768,16.65628,16.88339,15.29640,15.77241)
+data.df<-data.frame(x,y)
+ggplot(data.df,aes(x=x,y=y))+geom_point()+theme_linedraw()
+```
+
+Queremos hacer un modelo que dado un valor de X, me de el valor más cercano de
+Y. Podemos probar con modelos más o menos complejos, con distinto grado:
+
+```{r}
+#| fig-height: 5
+#| fig-width: 14
+model<-lm(y~poly(x,3),data=data.df)
+new.data.df<-data.frame(x=c(data.df$x,seq(-1,3,length.out=100)),y=NA,yp=NA)
+new.data.df$yp<-predict(model,new.data.df)
+
+data.df$yp<-predict(model,data.df)
+
+new.data.df<-rbind(new.data.df,data.df)
+ggplot(new.data.df,aes(x=x,y=y))+geom_point(na.rm=TRUE)+geom_line(aes(y=yp),color="blue")+theme_linedraw()
+
+caret::postResample(pred=data.df$yp, obs=data.df$y)
+```
+
+Cual de todos los modelos es el mejor? Acordaros que buscamos generalización,
+queremos que el modelo se comporte lo mejor posible con datos que no ha visto.
+Por ello dividimos nuestros datos entre test y training. Una buena prácita
+consiste en usar un 70%-80% para entrenamiento y el resto para tests. En este
+caso podemos por ejemplo coger 20 muestras para entrenamiento y el resto para
+test
+
+```{r}
+calcmse<-function(y_real,y_est){
+  sum((y_real-y_est)^2)/length(y_real)
+}
+
+idx<-1:20
+train.df<-data.df[idx,c("x","y")]
+test.df<-data.df[-idx,c("x","y")]
+```
+
+```{r}
+model<-lm(y~poly(x,4),data=train.df)
+
+new.data.df<-data.frame(x=c(data.df$x,seq(-1,3,length.out=100)),y=NA,yp=NA)
+new.data.df$yp<-predict(model,new.data.df)
+
+data.df$yp<-predict(model,data.df)
+
+new.data.df<-rbind(new.data.df,data.df)
+new.data.df$type<-"Training"
+
+test.df$type<-"Testing"
+test.df$yp<-predict(model,test.df)
+new.data.df<-rbind(new.data.df,test.df)
+
+
+ggplot(new.data.df,aes(x=x,y=y))+geom_point(na.rm=TRUE,aes(color=type))+
+  geom_line(aes(y=yp),color="blue")+theme_linedraw()
+paste("El MSE training es:",calcmse(y_real=train.df$y, y_est=predict(model,train.df)))
+paste("El MSE testing es:", calcmse(y_real=test.df$y,  y_est=predict(model,test.df)))
+```
+
+```{r}
+
+mse_train<-c()
+mse_test<-c()
+for (i in 1:11){
+  model<-glm(formula=y~poly(x,i),data=train.df)
+  yp_train<-predict(model,train.df)
+  mse_train[i]<-calcmse(train.df$y,yp_train)
+  
+  yp_test<-predict(model,test.df)
+  mse_test[i] <-calcmse(test.df$y,yp_test)
+}
+mse.df<-data.frame(degree=1:length(mse_train),mse=mse_train,type="Train")
+mse.df<-rbind(mse.df,data.frame(degree=1:length(mse_train),mse=mse_test,type="Test"))
+ggplot(mse.df,aes(x=degree,y=mse,color=type))+geom_line()+geom_point()
+```
+
+Si un modelo es demasiado simple tanto el error de test como de entrenamiento
+será alto.
+
+A medida que el modelo es más complejo el error disminuye.
+
+Si el modelo es demasiado complejo ocurre el **sobreajuste** el modelo aprende
+sobre el ruido de nuestro modelo de entrenamiento y no es capaz de generalizar
+bien. Para evitar el sobreajuste(overfitting) se puede recurrir a simplificar el
+modelo o a poner limitaciones sobre el mismo. Esto se conoce con el nombre de
+regularización.
+
+-   Regularización Ridge o $L^2$: se evita que los parámetros crezcan demasiado.
+    Se añade la función de coste: $$
+    Coste = {1 \over n} \sum_{i=0}^n{(Y-\hat{Y})^2}+\lambda \sum_j \beta^2
+    $$
+
+-   Regularización Lasso o $L$: permite seleccionar los parámetros que más
+    afectan al resultado. Se añade la función de coste: $$
+    Coste = {1 \over n} \sum_{i=0}^n{(Y-\hat{Y})^2}+\lambda \sum_j | \beta |
+    $$
+
+### Prediciendo la potencia de generación de una central de ciclo combinado
+
+El conjunto de datos contiene 9568 puntos de datos recopilados de una Central de
+Ciclo Combinado durante 6 años (2006-2011), cuando la planta de energía se puso
+a funcionar con carga completa. Las características consisten en variables
+ambientales promedio por hora, Temperatura Ambiente (AT), Presión ambiente (AP),
+Humedad relativa (HR) y Vacío de escape (V) para predecir la producción neta de
+energía eléctrica por hora (PE) de la planta.
+
+Las características consisten en variables ambientales promedio por hora
+
+-   **Producción neta de energía** eléctrica por hora (PE) 420.26-495.76 MW
+-   Temperatura (AT) en el rango de 1.81 ° C y 37.11 ° C
+-   Presión ambiental (AP) en el rango de 992.89-1033.30 milibares,
+-   Humedad relativa (HR) en el rango de 25.56% a 100.16%
+-   Vacío de escape (V) en el rango de 25.36-81.56 cm Hg
+
+Los promedios se toman de varios sensores ubicados alrededor de la planta que
+registran las variables ambientales cada segundo. Las variables se dan sin
+normalización.
+
+https://archive.ics.uci.edu/ml/datasets/Combined+Cycle+Power+Plant
+
+```{r}
+powerplant<-read.csv("data/powerplant.csv")
+
+plot(powerplant,pch='.')
+```
+
+```{r}
+library(GGally)
+ggpairs(powerplant, 
+       # lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
+       lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
+       )
+```
+
+```{r}
+set.seed(12345)
+idx<-sample(1:nrow(powerplant),nrow(powerplant)*0.7)
+powerplant.train<-powerplant[idx,]
+powerplant.test <-powerplant[-idx,]
+model_powerplant<-lm(PE~AT+V+AP+RH,data=powerplant.train)
+summary(model_powerplant)
+```
+
+```{r}
+powerplant.train$pe_est<-predict(model_powerplant,powerplant.train)
+#plot(powerplant.train$PE,(powerplant.train$PE-powerplant.train$pe_est)^2)
+
+ggplot(powerplant.train, aes(x=PE, y=PE-pe_est))+geom_point()
+#plot(powerplant.train$PE,(powerplant.train$PE-powerplant.train$pe_est))
+paste("RMSE:", sqrt(mean((powerplant.train$PE-powerplant.train$pe_est)^2)))
+caret::postResample(pred=powerplant.train$pe_est, obs= powerplant.train$PE)
+```
+
+En la gráfica anterior observamos que la varianza de los residuos es más o menos
+constante a lo largo de todo el rango predicho. Es decir, NO hay
+**Heterocedasticidad** o hay muy poca.
+
+En la siguiente podemos ver como los residuos siguen una distribución normal.
+
+```{r}
+hist(powerplant.train$PE-powerplant.train$pe_est,20)
+qqnorm(powerplant.train$PE-powerplant.train$pe_est)
+qqline(powerplant.train$PE-powerplant.train$pe_est, col = 'orange', lwd =2)
+```
+
+```{r}
+res <- (powerplant.train$PE-powerplant.train$pe_est)
+shapiro.test(res[sample(1:length(res),1000)])
+```
+
+```{r}
+
+ks.test((powerplant.train$PE-powerplant.train$pe_est),pnorm,0,sd((powerplant.train$PE-powerplant.train$pe_est)))
+```
+
+Analicemos ahora el conjunto de test
+
+```{r}
+powerplant.test$pe_est<-predict(model_powerplant,powerplant.test)
+plot(powerplant.test$PE,(powerplant.test$PE-powerplant.test$pe_est))
+
+caret::postResample(pred=powerplant.test$pe_est, obs= powerplant.test$PE)
+
+hist(powerplant.test$PE-powerplant.test$pe_est,20)
+qqnorm(powerplant.test$PE-powerplant.test$pe_est)
+qqline(powerplant.test$PE-powerplant.test$pe_est, col = 'orange', lwd =2)
+```
+
+### Distancia Cooks
+
+La distancia de Cooks nos sirve para detectar outliers, valores cuyo valor
+influye mucho en la salida de la regresión lineal.
+
+Se calcula mirando la diferencia entre el modelo completo con todas las muestras
+menos el modelo generado eliminando la muestra bajo estudio. La distancia de
+cook para la muestra $i$ se puede calcular como:
+
+$$
+D_i = \frac{\sum_{j=1}^N (\hat Y_j - \hat Y_{j(i)})^2}{(p+1)·\hat \sigma ^2}
+$$
+
+```{r}
+plot(cooks.distance(model_powerplant))
+```
+
+```{r}
+powerplant.train_clean<-powerplant.train[cooks.distance(model_powerplant)<0.005,]
+model_powerplant_clean<-lm(PE~AT+V+AP+RH,data=powerplant.train_clean)
+summary(model_powerplant_clean)
+```
+
+```{r}
+powerplant.test$pe_est<-predict(model_powerplant_clean,powerplant.test)
+plot(powerplant.test$PE,(powerplant.test$PE-powerplant.test$pe_est))
+sqrt(mean((powerplant.test$PE-powerplant.test$pe_est)^2))
+myrsquared(powerplant.test$PE,powerplant.test$pe_est)
+```
+
+### Mejorando el modelo cerebro/peso
+
+```{r}
+library(MASS)
+library(dplyr)
+library(tibble)
+
+unique(rbind(Animals, mammals)) %>% rownames_to_column(var = "especie") %>% 
+    mutate(log_body=log10(body)) %>%
+    mutate(log_brain=log10(brain)) -> animals_log
+
+set.seed(1111)
+idx <- sample(1:nrow(animals_log),nrow(animals_log)*0.7)
+animals_log_train <- animals_log[idx,]
+animals_log_test <- animals_log[-idx,]
+```
+
+```{r}
+model_body_brain <- lm(log_brain ~ log_body, data = animals_log_train)
+summary(model_body_brain)
+```
+
+```{r}
+caret::postResample(pred=predict(model_body_brain,animals_log_train), obs= animals_log_train$log_brain)
+caret::postResample(pred=predict(model_body_brain,animals_log_test), obs= animals_log_test$log_brain)
+```
+
+```{r}
+plot(cooks.distance(model_body_brain))
+
+th = 0.07
+abline(h=th,col='red')
+animals_log_train[cooks.distance(model_body_brain)>th,]
+```
+
+```{r}
+animals_log_train_clean <- animals_log_train[cooks.distance(model)<th,]
+model_body_brain <- lm(log_brain ~ log_body, data = animals_log_train_clean)
+summary(model_body_brain)
+```
+
+```{r}
+caret::postResample(pred=predict(model_body_brain,animals_log_train_clean), 
+                    obs= animals_log_train_clean$log_brain)
+caret::postResample(pred=predict(model_body_brain,animals_log_test), obs= animals_log_test$log_brain)
+```
+
+### Prediciendo la dureza del hormigón
+
+Resumen: El hormigón es el material más importante en la ingeniería civil. La
+resistencia a la compresión del hormigón es una función altamente no lineal de
+la edad y ingredientes Estos ingredientes incluyen cemento, escoria de alto
+horno, cenizas volantes, agua, superplastificante, agregado grueso y agregado
+fino.
+
+Fuente: https://archive.ics.uci.edu/ml/datasets/Concrete+Compressive+Strength
+
+**Características de los datos:** La resistencia a la compresión real del
+hormigón (MPa) para una mezcla dada bajo un la edad específica (días) se
+determinó a partir del laboratorio. Los datos están en forma cruda (no a
+escala).
+
+**Resumen estadístico:**
+
+Número de instancias (observaciones): 1030 Cantidad de Atributos: 9 Desglose de
+atributos: 8 variables de entrada cuantitativas y 1 variable de salida
+cuantitativa Faltan valores de atributo: ninguno
+
+-   Cemento (componente 1) - cuantitativo - kg en una mezcla m3 - Variable de
+    entrada
+-   Escoria de alto horno (componente 2) - cuantitativa - kg en una mezcla de
+    m3 - Variable de entrada
+-   Cenizas volantes (componente 3) - cuantitativo - kg en una mezcla m3 -
+    Variable de entrada
+-   Agua (componente 4) - cuantitativa - kg en una mezcla m3 - Variable de
+    entrada
+-   Superplastificante (componente 5) - cuantitativo - kg en una mezcla m3 -
+    Variable de entrada
+-   Agregado grueso (componente 6) - cuantitativo - kg en una mezcla m3 -
+    Variable de entrada
+-   Agregado fino (componente 7) - cuantitativo - kg en una mezcla m3 - Variable
+    de entrada
+-   Edad - cuantitativa - Día (1 \~ 365) - Variable de entrada
+-   Resistencia a la compresión del hormigón - cuantitativa - MPa - Variable de
+    salida
+
+```{r}
+concrete<-read.csv("data/Concrete_Data.csv",
+                   col.names=c("cemento","escoria","cenizas","agua","plastificante","aggrueso","agfino","edad","resistencia"))
+head(concrete)
+```
+
+```{r}
+library(GGally)
+ggpairs(concrete, 
+       # lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
+       lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
+       )
+```
+
+```{r}
+set.seed(12)
+idx<-sample(1:nrow(concrete),nrow(concrete)*0.7)
+train.df<-concrete[idx,]
+test.df<-concrete[-idx,]
+```
+
+```{r}
+model<-lm(resistencia~.-agfino-aggrueso,train.df)
+summary(model)
+```
+
+```{r}
+paste("R^2 testing:",myrsquared(test.df$resistencia,predict(model,test.df)))
+plot(train.df$resistencia,train.df$resistencia-predict(model,train.df))
+plot(test.df$resistencia,test.df$resistencia-predict(model,test.df))
+hist(test.df$resistencia-predict(model,test.df))
+```
+
+```{r}
+calcmse<-function(y_real,y_est){
+  sum((y_real-y_est)^2,na.rm = T)/length(y_real)
+}
+
+mse_train<-c()
+mse_test<-c()
+for (N in 1:5){
+    model<-lm(resistencia~
+           poly(cemento,N)*poly(escoria,N)*poly(cenizas,N)+
+           poly(agua,N)*poly(plastificante,N)+
+           poly(aggrueso,N)*poly(agfino,N)+
+           poly(edad,N),data = train.df)
+    
+    yp_train<-predict(model,train.df)
+    mse_train[N]<-calcmse(train.df$resistencia,yp_train)
+  
+    yp_test<-predict(model,test.df)
+    mse_test[N] <-calcmse(test.df$resistencia,yp_test)
+}
+mse.df<-data.frame(degree=1:length(mse_train),mse=mse_train,type="Train")
+mse.df<-rbind(mse.df,data.frame(degree=1:length(mse_train),mse=mse_test,type="Test"))
+
+library(ggplot2)
+options(repr.plot.height=4,repr.plot.width=6)
+
+ggplot(mse.df,aes(x=degree,y=mse,color=type))+geom_line()+geom_point()+scale_y_log10()
+```
+
+```{r}
+mse.df
+```
+
+```{r}
+N<-4
+model<-lm(resistencia~
+       poly(cemento,N)*poly(escoria,N)*poly(cenizas,N)+
+       poly(agua,N)*poly(plastificante,N)+
+       poly(aggrueso,N)*poly(agfino,N)+
+       poly(edad,N),data = train.df)
+paste("R^2 testing:",myrsquared(test.df$resistencia,predict(model,test.df)))
+plot(train.df$resistencia,train.df$resistencia-predict(model,train.df))
+plot(test.df$resistencia,test.df$resistencia-predict(model,test.df))
+hist(test.df$resistencia-predict(model,test.df),10)
+```
+
+```{r}
+qqnorm(test.df$resistencia-predict(model,test.df))
+qqline(test.df$resistencia-predict(model,test.df), col = 'orange', lwd =2)
+```
+
+## Variables categóricas
+
+Variables categóricas son aquellas que no presentan un valor de un número real
+sino una categoría, es decir pueden tomar un valor dentro de un conjunto fijo y
+limitado de posible valores, con o sin orden. Ejemplo:
+
+-   Variables binarias: Si/No
+-   Categóricas con orden: nada/poco/normal/mucho.
+-   Categóricas sin orden: rojo/verde/azul
+
+Antes de utilizar una de estas variables en un algoritmo de aprendizaje hay que
+convertirlo a un número real, es necesario **coficarlo** para que el algoritmo
+correspondiente lo interprete correctamente.
+
+#### Ejemplo peso de niños/niñas en función de la edad y del peso
+
+Queremos un modelo completo para calcular la longitud de un bebé en función de
+su edad en dias y su peso en kg.
+
+```{r}
+df_weight_height=read.csv("data/weight_babys.csv")
+head(df_weight_height)
+set.seed(123)
+idx<-sample(1:nrow(df_weight_height),nrow(df_weight_height)*0.7)
+train.df<-df_weight_height[idx,]
+test.df<-df_weight_height[-idx,]
+```
+
+Exploramos como se relacionan las variables entre sí, analizándo niños y niñas
+por separado. Se ve una alta correlación entre peso, altura y edad.
+
+```{r}
+library(GGally)
+options(repr.plot.height=4,repr.plot.width=6)
+
+ggpairs(df_weight_height,ggplot2::aes(colour=gender,alpha=0.5),
+       lower = list(continuous = wrap("points", alpha = 0.8,size=0.1))
+                  )
+```
+
+Como queremos hacer un modelo predictivo vamos a dividir los datos entre test y
+training:
+
+```{r}
+set.seed(123)
+idx<-sample(1:nrow(df_weight_height),nrow(df_weight_height)*0.7)
+train.df<-df_weight_height[idx,]
+test.df<-df_weight_height[-idx,]
+```
+
+Calculemos para la formula: $$
+height = \beta_0 + \beta_1·day + \beta_2·gender
+$$ Donde *gender* es una variable categórica que traducirá a dos valores: \*
+Boy - 0 \* Girl - 1
+
+```{r}
+model<-lm(data=train.df,formula=height~day+gender)
+summary(model)
+```
+
+A igual número de días una niña medirá, aproximadamente, en media 1.07cm menos.
+
+Pero si miramos al intervalo de confianza del coeficiente asociado al género es
+muy amplio, llegando a ser incluso positivo:
+
+```{r}
+confint(model)
+```
+
+Podemos ver las figuras de calidad de la predicción: $$
+RMS = \sqrt{\frac{\sum (y_i - \hat{y}_i)^2}{N}}
+$$ $$
+R^2 = 1-\frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}
+$$ $$
+MAE = \frac{\sum | y_i - \hat{y}_i | }{N}
+$$
+
+```{r}
+library(caret)
+print("Training:")
+train.df$pred <-  predict(model,train.df)
+postResample(train.df$pred,obs = train.df$height)
+print("Testing:")
+test.df$pred <-  predict(model,test.df)
+postResample(test.df$pred,obs = test.df$height)
+```
+
+```{r}
+ggplot(train.df,aes(x=day,y=pred,color=gender))+geom_line()
+```
+
+Ahora vamos a intentar otro modelo: $$
+height = \beta_0 + \beta_1·day·(gender==boy) + \beta_2·day·(gender==girl) \\
+height = \beta_0 + \beta_1·day·(1-gender) + \beta_2·day·(gender)        
+$$ Donde *gender* es una variable categórica que traducirá a dos valores: \*
+Boy - 0 \* Girl - 1
+
+Por lo tanto:
+
+-   $\beta_0$ cuanto mide de media un bebe al nacer. Un niño y una niña medirán
+    lo mismo.
+
+-   $\beta_1$ nos dirá cuantos cm crece cada día un niño
+
+-   $\beta_2$ nos dirá cuantos cm crece cada día una niña
+
+    ![](images/clipboard-9133593.png)
+
+```{r}
+model<-lm(data=train.df,formula=height ~ day:gender)
+summary(model)
+```
+
+```{r}
+library(caret)
+print("Training:")
+train.df$pred <-  predict(model,train.df)
+postResample(train.df$pred,obs = train.df$height)
+print("Testing:")
+test.df$pred <-  predict(model,test.df)
+postResample(test.df$pred,obs = test.df$height)
+```
+
+```{r}
+confint(model)
+```
+
+```{r}
+ggplot(train.df,aes(x=day,y=pred,color=gender))+geom_line()
+```
+
+Por último podríamos pensar en el modelo: $$
+height = \beta_0 +\beta_1·day + \beta_2·day·(gender==girl)+ \beta_3·(gender==girl) \\
+height = \beta_0 + \beta_1·day + \beta_2·day·(gender)+ \beta_3·gender
+$$ Donde *gender* es una variable categórica que traducirá a dos valores:
+
+-   Boy - 0
+-   Girl - 1
+
+Por lo tanto:
+
+-   $\beta_0$ cuanto mide de media un niño al nacer
+-   $\beta_1$ nos dirá cuantos cm crece cada día un niño
+-   $\beta_2$ nos dirá cuantos cm crece cada día una niña en exceso sobre un
+    niño
+-   $\beta_3$ nos dirá cuantos cm de más mide una niña al nacer respecto un niño
+
+```{r}
+model<-lm(data=train.df,formula=height~day*gender)
+#model<-lm(data=train.df,formula=height~day:gender+day+gender)
+summary(model)
+```
+
+```{r}
+confint(model)
+```
+
+```{r}
+options(repr.plot.height=2,repr.plot.width=4,repr.plot.res = 400)
+ggplot(train.df,aes(x=day,y=pred,color=gender))+geom_line()
+```
+
+## Codificación de variables categóricas
+
+### One-hot
+
+Se crean N columnas nuevas, tantas como posibles valores tenga la variable
+categórica. Se asigna un valor de 1 a la variable que tiene ese valor 0 en caso
+contrario.
+
+| \-         | col1 | col2 | col3 | col4 |
+|------------|:----:|-----:|------|------|
+| categoria1 |  1   |    0 | 0    | 0    |
+| categoria2 |  0   |    1 | 0    | 0    |
+| categoria3 |  0   |    0 | 1    | 0    |
+| categoria4 |  0   |    0 | 0    | 1    |
+
+```{r}
+df_new_econding<-df_weight_height
+df_new_econding$boy<-ifelse(df_new_econding$gender=="boy",1,0)
+df_new_econding$girl<-ifelse(df_new_econding$gender=="girl",1,0)
+df_new_econding$gender<-NULL
+#set.seed(123)
+#idx<-sample(1:nrow(df_new_econding),nrow(df_new_econding)*0.7)
+train.df<-df_new_econding[idx,]
+test.df<-df_new_econding[-idx,]
+```
+
+```{r}
+head(train.df)
+```
+
+```{r}
+model<-lm(data=train.df,formula=height~day:boy+day:girl)
+summary(model)
+```
+
+```{r}
+model<-lm(data=train.df,formula=height~day+girl)
+summary(model)
+```
+
+### Dummy
+
+Se crean N-1 columnas nuevas, tantas como posibles valores tenga la variable
+categórica menos una. para una categoría en la que todos los valores serán 0,
+esa catergoría será usada como base del modelo. Al resto de columnas se le
+asigna un valor de 1 a la variable que tiene ese valor 0 en caso contrario.
+
+| \-         | col1 | col2 | col3 |
+|------------|:----:|-----:|------|
+| categoria1 |  0   |    0 | 0    |
+| categoria2 |  1   |    0 | 0    |
+| categoria3 |  0   |    1 | 0    |
+| categoria4 |  0   |    0 | 1    |
+
+```{r}
+df_new_econding<-df_weight_height
+df_new_econding$girl<-ifelse(df_new_econding$gender=="girl",1,0)
+df_new_econding$gender<-NULL
+set.seed(123)
+idx<-sample(1:nrow(df_new_econding),nrow(df_new_econding)*0.7)
+train.df<-df_new_econding[idx,]
+test.df<-df_new_econding[-idx,]
+```
+
+```{r}
+model<-lm(data=train.df,formula=height~day+day:girl)
+summary(model)
+```
+
+```{r}
+paste("El coeficiente final para las niñas es:",model$coefficients[2]+model$coefficients[3])
+```
+
+La ecuación equivalente sería: $$
+height = \beta_0 + \beta_1·day + \beta_2·day·girl \\
+height = \beta_0 + (\beta_1+\beta_2·girl)·day
+$$
+
+### Ortogonal de polinomios
+
+La codificación ortogonal de polinomios es una forma de análisis de tendencias
+en el sentido de que busca tendencias lineales, cuadráticas, cúbicas, grado-n,
+etc.. en la variable categórica. Este tipo de sistema de codificación debe
+usarse solo con una variable ordinal en la que los niveles están equiespaciados.
+
+| \-         |     .L     |   .Q | .C         |
+|------------|:----------:|-----:|------------|
+| categoria1 | -0.6708204 |  0.5 | -0.2236068 |
+| categoria2 | -0.2236068 | -0.5 | 0.6708204  |
+| categoria3 | 0.2236068  | -0.5 | -0.6708204 |
+| categoria4 | 0.6708204  |  0.5 | 0.2236068  |
+
+### Codificación Helmert
+
+la codificación Helmert inversa genera el primer coeficiente de regresión como
+la media del nivel 2 en comparación con la media del nivel 1. El segundo
+coeficiente de regresión sería la media del nivel 3 en comparación con la media
+de los niveles 1 y 2. El tercero el coeficiente de regresión sería la media del
+nivel 4 menos la media de los niveles 1, 2 y 3.
+
+| \-         | col1 | col2 | col3 |
+|------------|:----:|-----:|------|
+| categoria1 |  -1  |   -1 | -1   |
+| categoria2 |  1   |   -1 | -1   |
+| categoria3 |  0   |    2 | -1   |
+| categoria4 |  0   |    0 | 3    |
+
+### Ejemplo
+
+The Food and Agriculture Organization of the United Nations provides free access
+to food and agriculture data for over 245 countries and territories, from the
+year 1961 to the most recent update (depends on the dataset). One dataset from
+the FAO's database is the Food Balance Sheets. It presents a comprehensive
+picture of the pattern of a country's food supply during a specified reference
+period, the last time an update was loaded to the FAO database was in 2013. The
+food balance sheet shows for each food item the sources of supply and its
+utilization. This chunk of the dataset is focused on two utilizations of each
+food item available:
+
+```         
+Food - refers to the total amount of the food item available as human food during the reference period.
+Feed - refers to the quantity of the food item available for feeding to the livestock and poultry during the reference period.
+```
+
+https://www.kaggle.com/dorbicycle/world-foodfeed-production
+
+```{r}
+fao=read.csv('./data/FAO.csv', stringsAsFactors = T)
+head(fao)
+```
+
+```{r}
+fao=fao[c(3,5,7,11:63)]
+head(fao)
+```
+
+```{r}
+levels(fao$Item)[levels(fao$Item)=="Wheat and products"] <- "Wheat"
+levels(fao$Item)[levels(fao$Item)=="Barley and products"]<-"Barley"
+levels(fao$Item)[levels(fao$Item)=="Rice (Milled Equivalent)"]<-"Rice"
+levels(fao$Item)[levels(fao$Item)=="Maize and products"]<-"Maize"
+items<-c("Wheat","Rice","Barley","Maize")
+fao<-fao[fao$Item %in% items,]
+fao$Item<-droplevels(fao$Item)
+head(fao)
+```
+
+```{r}
+library(reshape2)
+fao=melt(fao,id.vars=c("Area","Item","Element"))
+head(fao)
+```
+
+```{r}
+fao$year<-as.numeric(substr(fao$variable,2,5))
+head(fao)
+```
+
+```{r}
+library(dplyr)
+fao_sum<-fao %>% group_by(Item,Element,year) %>% summarise(value=mean(value,na.rm=T))
+
+options(repr.plot.height=4,repr.plot.width=6)
+library(ggplot2)
+ggplot(subset(fao_sum,Element=="Food"),aes(x=year,y=value,color=Item))+geom_line()
+ggplot(subset(fao_sum,Element=="Feed"),aes(x=year,y=value,color=Item))+geom_line()
+```
+
+```{r}
+model<-lm(data=fao,formula="value~year+Item+Element")
+summary(model)
+```
+
+## Contrastes
+
+Los "contrastes" definidos en el entorno R determinan como las variables
+categóricas son gestionadas en los modelos. El patrón más comun para los modelos
+es el "treatment contrasts", que es equivalente a una codificación dummy. Al
+primer nivel de la variable categórica es se le asigna el valor 0, y los otros
+niveles se miden a partir de este.
+
+#### Dummy
+
+Como ya habíamos visto, por defecto R utiliza una coficación Dummy de variables
+categóricas.
+
+El nivel de referencia se elije al que tiene el nivel (level) más bajo:
+
+```{r}
+levels(fao$Item)
+```
+
+```{r}
+contrasts(fao$Item)
+```
+
+Podemos cambiar el nivel de referencia con la función `cont.trearment` , por
+ejemplo seleccionamos el Trigo:
+
+```{r}
+ctr<-contr.treatment(4, base = 4)
+colnames(ctr)<-c("Cebada","Maiz","Arroz")
+ctr
+```
+
+```{r}
+contrasts(fao$Item)<-ctr
+```
+
+```{r}
+contrasts(fao$Item)
+```
+
+```{r}
+model<-lm(data=fao,formula="value~year+Item+Element")
+summary(model)
+```
+
+```{r}
+print("Predicción usando el método predict()")
+predict(model,data.frame(year=1980,Item="Barley",Element="Feed"))
+
+print("Predicción usando la formula de la regresión:")
+model$coef["(Intercept)"]+model$coef["year"]*1980+model$coef["ItemCebada"]
+```
+
+Esto es equivalente a crear 3 columnas más llamadas ItemCebada, ItemMaiz e
+ItemArroz:
+
+```{r}
+fao_dummy<-fao
+fao_dummy$ItemCebada<-ifelse(fao_dummy$Item=="Barley",1,0)
+fao_dummy$ItemMaiz<-ifelse(fao_dummy$Item=="Maize",1,0)
+fao_dummy$ItemArroz<-ifelse(fao_dummy$Item=="Rice",1,0)
+head(fao_dummy)
+```
+
+```{r}
+model_dummy<-lm(data=fao_dummy,formula="value~year+Element+ItemCebada+ItemMaiz+ItemArroz")
+summary(model_dummy)
+```
+
+#### Codificación polinómica
+
+```{r}
+ctr<-contr.poly(4)
+ctr
+```
+
+```{r}
+contrasts(fao$Item)<-ctr
+```
+
+```{r}
+contrasts(fao$Item)
+```
+
+```{r}
+model<-lm(data=fao,formula="value~year+Item+Element")
+summary(model)
+```
+
+```{r}
+print("Predicción usando el método predict()")
+predict(model,data.frame(year=1980,Item="Barley",Element="Feed"))
+
+print("Predicción usando la formula de la regresión:")
+model$coef["(Intercept)"]+model$coef["year"]*1980+
+ model$coef["Item.L"]*ctr[1,1]+model$coef["Item.Q"]*ctr[1,2]+model$coef["Item.C"]*ctr[1,3]
+```
+
+```{r}
+#| scrolled: true
+fao_dummy$valorL<-ctr[as.numeric(fao$Item),1]
+fao_dummy$valorQ<-ctr[as.numeric(fao$Item),2]
+fao_dummy$valorC<-ctr[as.numeric(fao$Item),3]
+head(fao_dummy)
+```
+
+```{r}
+model_dummy<-lm(data=fao_dummy,formula="value~year+Element+valorL+valorQ+valorC")
+summary(model_dummy)
+```
+
+#### Codificacion Helmert
+
+```{r}
+ctr<-contr.helmert(4)
+ctr
+```
+
+```{r}
+contrasts(fao$Item)<-ctr
+```
+
+```{r}
+model<-lm(data=fao,formula="value~year+Item+Element")
+summary(model)
+```
+
+```{r}
+print("Predicción usando el método predict()")
+predict(model,data.frame(year=1980,Item="Barley",Element="Feed"))
+
+print("Predicción usando la formula de la regresión:")
+model$coef["(Intercept)"]+model$coef["year"]*1980-
+ model$coef["Item1"]-model$coef["Item2"]-model$coef["Item3"]
+```
+
+## Regresión lineal y t-student/ANOVA
+
+Suponiendo que los residuos siguen una distribución gaussiana, se puede calcular
+la varianza de cada uno de los coeficientes como: $$
+Var [ \beta' | X ] = s^2 (X^TX)^{-1} = \frac{\varepsilon^2}{n-p} ·  (X^TX)^{-1} = \frac{\sum(Y_i-Y')^2}{n-p} ·  (\sum(X_i-\overline{X}) )^{-1}
+$$
+
+Donde:
+
+-   p es el número de grados de libertad, de coeficientes, en este caso son 2:
+    Intersección y la pendiente.
+-   n es el número de muestras
+
+La media de los coeficientes vienen dados por el vector $\beta'$. Con la media y
+la varianza podemos calcular la probabilidad de que el valor de la media
+estimado esté muy desviado de 0 por puro azar. Eso aparece con el valor
+Pr(\>\|t\|) en el summary del modelo. Cuanto menos sea este valor más fiable
+será. Más adelante veremos que significa esta probabilidad en detalle, llamada
+p-valor.
+
+Donde Pr(\>\|t\|) vendrá a ser un test de dos hipótesis:
+
+-   $H_0$ : El valor del coeficiente no es importante para la regresión. Su
+    valor debería ser 0.
+
+-   $H_1$ : El valor del coeficiente es importante para la regresión. Su valor
+    debería ser diferente de 0.
+
+El test estadístico que trataremos de medir es el coeficiente de la regresión
+lineal dividido por la desviación típica:
+
+$$
+t=\frac{coef}{\sigma_M}
+$$
+
+### Ejemplo: Peso de los niños al nacer
+
+Este dataset contien información de bebes recien nacidos y sus padres. Nos vamos
+a centrar en si la madre era o no fumadora.
+
+```{r}
+bwt<-read.csv("data/birthweight_reduced.csv")
+bwt$smoker<-factor(bwt$smoker,labels = c("NO","YES"))
+```
+
+*Repaso t-test*
+
+```{r}
+tw<-t.test(bwt$Birthweight[bwt$smoker=="YES"],bwt$Birthweight[bwt$smoker=="NO"])
+```
+
+```{r}
+library(ggplot2)
+d.f.<-tw$parameter
+t<-tw$statistic
+loth<-qt(0.025,d.f.,lower.tail = T)
+upth<-qt(0.025,d.f.,lower.tail = F)
+
+paste("El margen que nos llevaría a rechazar la hipótesis nula está fuera del rango: [",
+      round(loth,2),",",round(upth,2),"]")
+
+
+qsd009<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> loth  & x<upth  ]<-NA
+    out
+}
+
+qsdtest<-function(x){    
+    out<-dt(x,d.f.)
+    out[x> -abs(t)  & x< abs(t)  ]<-NA
+    out
+}
+
+
+options(repr.plot.height=2,repr.plot.width=6)
+xdf<-data.frame(z=c(-4,4))
+ggplot(xdf,aes(x=z))+stat_function(fun=dt,args = list(df = d.f.))+
+  stat_function(fun=qsd009, geom="area",fill="red",alpha=0.3)+
+  stat_function(fun=qsdtest, geom="area",fill="yellow",alpha=0.2)+
+  geom_text(x=3,y=0.1,size=4,label=paste0("t_cdf(",round(upth,2),")=0.975"))+
+  geom_text(x=-3,y=0.1,size=4,label=paste0("t_cdf(",round(loth,2),")=0.025"))+
+
+  geom_vline(xintercept = t,color="blue")+
+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+
+tw
+```
+
+### ¿Qué sabíamos hasta ahora?
+
+#### Para madres no fumadoras
+
+```{r}
+bwt_nosmoker<-bwt[bwt$smoker=="NO",]
+mn<-mean(bwt_nosmoker$Birthweight)
+paste("La media de peso de los bebes de las madres no fumadoras es de",mn)
+paste("Su desviación típica estimada es de",sd(bwt_nosmoker$Birthweight))
+```
+
+Sabiendo que el vector de las medias tiene una distribución gaussiana de media
+$\bar{x}$. Pero una desviación típica desconocida, estimada a través de la
+muestra de $\frac{\sigma}{\sqrt{n}}$ es fácil calcular el intervalo de confianza
+para la media con una probabilidad de $p$.
+
+Los intervalos de confianza para un p-valor de $p$ y $n$ muestras vendrá dado
+por la fórmula:
+
+$$
+\begin{split}
+\text{Limite inferior} = \bar{x}-t(1-p/2,n-1)·\frac{\sqrt {var[X]}}{\sqrt{n}} \\
+\text{Limite superior} = \bar{x}+t(1-p/2,n-1)·\frac{\sqrt {var[X]}}{\sqrt{n}} \\
+\end{split}
+$$
+
+Donde t(p,n-1) es la función cumulativa de probabilidad de una distribución
+t-student con $n-1$ grados de libertad.
+
+```{r}
+p<-0.05
+error<-qt(1-p/2,nrow(bwt_nosmoker)-1)*sd(bwt_nosmoker$Birthweight)/sqrt(nrow(bwt_nosmoker))
+paste("El error será:",error)
+paste("Intervalo de confianza del 95% de la media de no fumadores será: [",mn-error,",",mn+error,"]")
+#Equivalente a ejecutar: t.test(bwt_nosmoker$Birthweight)
+```
+
+#### Para madres fumadoras
+
+```{r}
+bwt_smoker<-bwt[bwt$smoker=="YES",]
+mn_smoker<-mean(bwt_smoker$Birthweight)
+paste("La media de peso de los bebes de las madres fumadoras es de",mn_smoker)
+paste("Su desviación típica estimada es de",sd(bwt_smoker$Birthweight))
+```
+
+```{r}
+p<-0.05
+error_smoker<-qt(1-p/2,nrow(bwt_smoker)-1)*sd(bwt_smoker$Birthweight)/sqrt(nrow(bwt_smoker))
+paste("El error será:",error_smoker)
+paste("Intervalo de confianza del 95% de la media de no fumadores será: [",
+      mn_smoker-error_smoker,",",mn_smoker+error_smoker,"]")
+```
+
+```{r}
+t.test(bwt_smoker$Birthweight)
+```
+
+### ¿Que nos está diciendo el resumen del modelo?
+
+```{r}
+model <- lm(formula = Birthweight ~ smoker, data = bwt)
+summary(model)
+```
+
+```{r}
+paste("La media de peso de los bebes de las madres NO fumadoras es de",model$coefficients[1])
+paste("La media de peso de los bebes de las madres fumadoras es de",model$coefficients[1]+model$coefficients[2])
+```
+
+```{r}
+vcov_matrix <- vcov(model)
+paste("La desviación típica del error es:",sqrt(vcov_matrix[1,1]))
+```
+
+```{r}
+p<-0.05
+error<-qt(1-p/2,nrow(bwt)-2)*sqrt(vcov_matrix[1,1])
+paste("Intervalo de confianza del 95% de la media de no fumadores será: [",
+      model$coefficients[1]-error,",",model$coefficients[1]+error,"]")
+```
+
+```{r}
+error<-qt(1-p/2,nrow(bwt)-2)*sqrt(vcov_matrix[2,2])
+paste("Intervalo de confianza del 95% del aumento de peso debido a que la made es fumadora será: [",
+      model$coefficients[2]-error,",",model$coefficients[2]+error,"]")
+```
+
+```{r}
+confint(model,level=1-p)
+```
+
+```{r}
+model$coefficients[1]+confint(model,level=1-p)[2,]
+```
+
+Para ver cual es el peso de los niños de madres fumadores y no fumadoras
+podríamos hacer:
+
+```{r}
+model <- lm(formula = Birthweight ~ smoker+0, data = bwt)
+summary(model)
+confint(model,level=1-p)
+```
+
+### Ejemplo: Efectividad de una dieta
+
+https://www.sheffield.ac.uk/polopoly_fs/1.570199!/file/stcp-Rdataset-Diet.csv
+
+Los datos contienen información de 76 personas que tomaron una de las tres
+dietas (1, 2 o 3). Además se aporta información extra como edad, género y
+altura. El objetivo del estudio es compara cual de las tres dietas era la mejor
+para perder peso.
+
+```{r}
+diet = read.csv("data/stcp-Rdataset-Diet.csv",row.names=1)
+head(diet)
+diet$loss <- diet$pre.weight - diet$weight6weeks
+diet$Diet <- factor(diet$Diet)
+diet$gender<-factor(diet$gender, labels=c("female","male"))
+str(diet)
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6,repr.plot.res = 200)
+
+ggplot(diet, aes(y=loss, x=Diet, color=Diet))+geom_boxplot()
+```
+
+#### Efectividad de la dieta
+
+*Tests estadisticos*
+
+Aplicamos el test ANOVA y vemos que efectivamente, hay una diferencia
+estadística significativa entre las diferentes dietas.
+
+```{r}
+for (v in levels(diet$Diet)){
+    print(paste("Diet:",v,"pvalue,",
+                shapiro.test(diet$loss[diet$Diet==v])$p.value))
+}
+anovatest <- aov(loss~Diet, data=diet)
+summary(anovatest)
+```
+
+```{r}
+TukeyHSD(anovatest)
+```
+
+*Regresión lineal*
+
+La regresión lineal nos muestra que apenas hay diferencia entre la dieta1 y
+dieta2, pero la dieta3 si que es mejor.
+
+```{r}
+model<-lm(data=diet,formula=loss~ Diet)
+summary(model)
+```
+
+```{r}
+diet3<-mean(subset(diet,Diet==3)$loss)
+diet2<-mean(subset(diet,Diet==2)$loss)
+diet1<-mean(subset(diet,Diet==1)$loss)
+
+paste("Perdida de peso por dieta 1 : ",diet1, ". Es igual a:", model$coef[1])
+paste("Perdida de peso por dieta 2 : ",diet2, ". Es igual a:", model$coef[1]+model$coef[2])
+paste("Perdida de peso por dieta 3 : ",diet3, ". Es igual a:", model$coef[1]+model$coef[3])
+```
+
+#### Adelgazamiento por la dieta y género
+
+```{r}
+summary(aov(loss~Diet+gender,data=diet))
+```
+
+```{r}
+summary(lm(data=diet,formula=loss~ Diet+gender))
+```
+
+Ser hombre o mujer parece no aumentar las probabilidades de perder peso. La
+regresión lineal nos dice que de media los hombres pierden 0.09 kg más que las
+mujeres, pero la precisión de este número no es estadísticamente significativa.
+
+#### Efectividad de la dieta en el género
+
+```{r}
+summary(aov(loss~Diet*gender,data=diet))
+```
+
+lm(data=diet,formula=loss\~ Diet\*gender)
+
+```{r}
+model<-lm(data=diet,formula=loss~ Diet*gender)
+summary(model)
+```
+
+Parece que la dieta 3 es más efectiva en mujeres que hombres.
+
+```{r}
+lossmale3<-mean(subset(diet,gender=="male" & Diet==3)$loss)
+lossfemale3<-mean(subset(diet,gender=="female" & Diet==3)$loss)
+
+paste("Perdida de peso por dieta 3 en mujeres: ", lossfemale3,      
+       ". Es igual a:", model$coef['(Intercept)']+model$coef['Diet3'])
+paste("Perdida de peso por dieta 3 en hombres: ", lossmale3,
+      ". Es igual a:",
+      model$coef['(Intercept)']+model$coef['Diet3']+model$coef['Diet3:gendermale']+model$coefficients['gendermale'])
+```

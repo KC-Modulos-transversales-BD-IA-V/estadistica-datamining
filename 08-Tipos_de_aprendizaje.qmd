@@ -1,0 +1,195 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 80
+---
+
+# Enfoques de modelado
+
+## Estadística
+
+En estadística vimos como realizar un análisis exploratorio de datos. Sabemos
+usar:
+
+-   Histogramas/Curvas de probabilidad/Kernel density estimation
+-   Diagramas de cajas (Boxplot)
+-   Comparar poblaciones: Tests estadísticos
+-   Entender como afectan una o varias variables a nuestros datos: Test
+    estadísticos y regresiones
+
+Siempre analizabamos el 100% de nuestros datos. Obteníamos una descripción
+detallada de nuestra población. No haciamos predicciones
+
+## Minería de datos
+
+Utilizado para extraer información, conocimiento, útil de los datos en bruto.
+
+## Aprendizaje máquina
+
+En el aprendizaje máquina tenemos algoritmos que dados unos datos de entrada, es
+capaz de *aprender* como se comportan esos datos en función de los parámetros de
+entrada.
+
+El objetivo **no** es entender como afecta una variable o varias variables a
+nuestros datos.
+
+El **objetivo** es **generalizar** el problema. Cuando llegue una variable con
+un valor que no ha visto nunca antes, es capaz de hacer una **estimación** lo
+suficientemente correcta.
+
+# Jerarquía del conocimiento
+
+https://es.wikipedia.org/wiki/Jerarqu%C3%ADa_del_conocimiento
+
+La "Jerarquía del Conocimiento", también conocida como "Jerarquía DIKW", o
+"Pirámide del Conocimiento", podría ser definida como un conjunto de modelos
+para representar las relaciones aparentemente estructurales entre Datos,
+Información, Conocimiento, y en algunos casos Sabiduría.
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/DIKW_Pyramid.svg/494px-DIKW_Pyramid.svg.png)
+
+Por lo general:
+
+-   Información se define en términos de Datos.
+-   Conocimiento se define en términos de Información.
+-   Sabiduría en términos de Conocimiento.
+
+![](https://pbs.twimg.com/media/EfYiz2AWsAAiPxh?format=jpg&name=small)
+
+# Modelos estadísticos
+
+https://xkcd.com/1838/ ![](https://imgs.xkcd.com/comics/machine_learning.png)
+
+Un modelo no es más que un conjunto de operaciones matemáticas a las cuales le
+das una entrada te propone una salida.
+
+Todos los modelos son erróneos, pero algunos son útiles.
+https://en.wikipedia.org/wiki/All_models_are_wrong
+
+Ejemplo de modelo útil sobre el [movimiento de los
+planetas](https://en.wikipedia.org/wiki/Apparent_retrograde_motion)
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Apparent_retrograde_motion_of_Mars_in_2003.gif/375px-Apparent_retrograde_motion_of_Mars_in_2003.gif)
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Ptolemaic_elements.svg/375px-Ptolemaic_elements.svg.png)
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Copernican_heliocentrism_diagram-2.jpg/450px-Copernican_heliocentrism_diagram-2.jpg)
+
+### Aprendizaje supervisado
+
+En el aprendizaje supervisado nosotros enseñamos entradas y salidas.
+
+El algoritmo creará una **función** a partir de esos ejemplos. Este proceso se
+llama **entrenamiento**. El entrenamiento donde el algoritmo aprende.
+
+Cuando le damos **datos nuevos**, una **función entrenada** nos dará el
+resultado correcto.
+
+![](./img/CajaNegra.png)
+
+## Ejemplo de aprendizaje supervisado
+
+Recordemos de estadística lo que era una regresión lineal:
+
+Es un modelo matemático usado para aproximar la relación de dependencia entre
+una variable dependiente $Y$, las variables independientes $X_i$ y un término
+aleatorio $\varepsilon$. Este modelo puede ser expresado como:
+
+$$
+Y=\beta\_1 X_1+\beta\_2 X_2+\cdots +\beta\_p X_p+\varepsilon =
+\sum \beta\_k X_k+\varepsilon
+$$
+
+Un modelo de aprendizaje supervisado va a aprender de unos ejemplos que le
+pasemos de la forma más general posible. Así la próxima vez que le mostremos
+datos nuevos dará un resultado confiable.
+
+```{r}
+library("dslabs")
+```
+
+Vamos a simular que soltamos un objeto desde lo alto de la torre de Pisa
+(55.86m) y medimos la distancia hasta al suelo que ese objeto presenta pasados
+$t$ segundos.
+
+Evientemente, nuestras medidas tendrán un error, por eso vamos a tomar varias
+medidas y repetir el experimento varias veces.
+
+```{r}
+data_train<-rfalling_object(n = 10)[c("time","observed_distance")]
+head(data_train)
+```
+
+```{r}
+data_train<-rbind(data_train,rfalling_object(n = 5)[c("time","observed_distance")])
+data_train<-rbind(data_train,rfalling_object(n = 7)[c("time","observed_distance")])
+data_train<-rbind(data_train,rfalling_object(n = 20)[c("time","observed_distance")])
+```
+
+```{r}
+library(ggplot2)
+options(repr.plot.height=6,repr.plot.width=8)
+ggplot(data_train, aes(x=time,y=observed_distance))+geom_point(size=1,color="blue")
+```
+
+```{r}
+ggplot(data_train, aes(x=time,y=observed_distance))+geom_point(size=1,color="blue")+geom_smooth(method='lm',color="red")
+
+```
+
+```{r}
+model <- lm(formula=observed_distance~time, data=data_train)
+summary(model)
+```
+
+En este caso estamos tratando de mejorar el error cuadrático medio:
+
+Estamos tratando de minimizar la función de error.
+
+```{r}
+sqrt(mean((data_train$observed_distance-model$fitted.values)^2))
+```
+
+La próxima vez que tengamos datos nuevos, podremos realizar una estimación del
+resultado esperado.
+
+```{r}
+data_test<-data.frame(time=c(1,3,5))
+predict(model,data_test)
+```
+
+Pero atentos, el modelo solo puede generalizar cuando los datos son parecidos a
+los que hemos visto.
+
+Aquí el modelo falla en predecir que una vez que el objeto toca el suelo no va a
+seguir cayendo.
+
+```{r}
+ggplot(data_train, aes(x=time,y=observed_distance))+geom_point(size=1,color="blue")+
+  geom_smooth(method='lm', formula='y~x+I(x^2)', color="red")
+
+```
+
+```{r}
+model <- lm(formula=observed_distance~I(time^2), data=data_train)
+summary(model)
+```
+
+### Aprendizaje NO supervisado
+
+Encuentra estructuras en los datos sin necesidad de intervención externa.
+
+Nos puede servir para agrupar datos por similitud.
+
+```{r}
+head(olive)
+```
+
+```{r}
+library(GGally)
+options(repr.plot.height=8,repr.plot.width=8)
+ggpairs(olive[,c("palmitic","palmitoleic","stearic","oleic","linoleic","linolenic","arachidic","eicosenoic")],
+       lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
+       )
+```
