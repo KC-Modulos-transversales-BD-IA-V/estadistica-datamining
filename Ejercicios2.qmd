@@ -1,0 +1,134 @@
+---
+title: "Ejercicios2"
+format: html
+editor: visual
+---
+
+## Peso al nacer
+
+Leer el dataset que se encuentra en data/birthweight_reduced.csv.
+
+Para la columna Birthweight: Calcula la media de los dos grupos para madres fumadores y no fumadores. Calcula su intervalo de confianza.
+
+```{r}
+bwt <- read.csv("./data/birthweight_reduced.csv")
+head(bwt)
+```
+
+```{r}
+bwt$smoker <- factor(bwt$smoker, labels=c('No','Yes'))
+```
+
+Para NO fumadores
+
+```{r}
+
+```
+
+Para SI fumadores
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## Ejemplo probabilidad COVID
+
+Ejercicio se resuelve usando la distribución binomial. Supongamos que tenemos una población donde 5 de cada 1000 personas están infectadas.
+
+Pintar una curva donde se represente en el eje Y la probabilidad de encontrar al menos un contagiado en función del número de personas dado por el eje X.
+
+Esto se haría utilizando una función binomial donde la probabilidad de que alguien esté infectado es 5/1000. x sería el número de personas y es un valor que puede ir de 1 hasta 1000. Usa la función dbinom.
+
+```{r}
+
+```
+
+Pintar una curva donde se represente en el eje Y la probabilidad de encontrar exactamente dos contagiados en función del número de personas dado por el eje X
+
+```{r}
+
+
+```
+
+Pintar una curva donde se represente en el eje Y la probabilidad de encontrar dos o más contagiados en función del número de personas dado por el eje X
+
+```{r}
+
+```
+
+Probabilida de encontar 5 o más personas contagiadas en una población de 1000
+
+```{r}
+
+
+```
+
+# Origen de la vida
+
+Datos basados en:
+
+-   [Life Before Earth](https://arxiv.org/pdf/1304.3381.pdf)
+-   [Genome increase as a clock for the origin and evolution of life](https://biologydirect.biomedcentral.com/track/pdf/10.1186/1745-6150-1-17?site=biologydirect.biomedcentral.com)
+-   Más información: [Kurgesagt](https://www.youtube.com/watch?v=JOiGEI9pQBs)
+
+La siguiente tabla muestra la complejidad de ADN, eliminando las redundancias, de diferentes grupos de animales y su aparición en la tierra:
+
+| especies    | genoma completo | genoma sin redundancia | aparición |
+|-------------|-----------------|------------------------|-----------|
+| mamíferos   | $3.2 · 10^9$pb  | $4.8 · 10^8$pb         | 125 ma    |
+| peces       | $4.8 · 10^8$pb  | $1.6 · 10^8$pb         | 500 ma    |
+| gusanos     | $9.7 · 10^7$pb  | $7.2 · 10^7$pb         | 1000ma    |
+| eucariotas  | $2.9 · 10^6$pb  | $2.9 · 10^6$pb         | 2100ma    |
+| procariotas | $5 · 10^5$pb    | $5 · 10^5$pb           | 3500ma    |
+
+Las columnas significan:
+
+-   especies: especies de animales.
+-   genoma completo: Longitud del genoma de una especie medido en pares de bases de ADN.
+-   genoma completo: Longitud del genoma de una especie, eliminando la redundancia, medido en pares de bases de ADN.
+-   aparición: Cuando ese conjunto de especies aparecieron.
+
+Con estos datos tratar de obtener una regresión que indique cuando apareció un organismo con solo 1 par de bases genéticas. Esto podría marcar el origen de la vida.
+
+¿Qué columna habría que coger para hacer la regresión la del genoma completo o el que elimina la redundancia?
+
+Ayuda: Es mejor usar escalas logarítmicas.
+
+```{r}
+df<-data.frame(especie=c("mamíferos","peces","gusanos","eucariotas","procariotas"),
+           gen_total=c(3.2e9,4.8e8,9.7e7,2.9e6,5e5),
+          gen_reduc=c(4.8e8,1.6e8,7.2e7,2.9e6,5e5),
+          aparicion=c(-125,-500,-1000,-2100,-3550))
+```
+
+```{r}
+library(ggplot2)
+library(reshape2)
+
+dfm<-melt(df,id=c("especie","aparicion"))
+ggplot(data=dfm,aes(x=aparicion,y=value))+geom_point(aes(shape=variable,color=variable))+theme_bw()
+```
+
+```{r fig.height=2, fig.width=4}
+dflog<-df
+dflog[,2:3]<- log10(dflog[,2:3])
+#dflog[,4]<- -log10(-dflog[,4])
+dflog
+
+dfm<-melt(dflog,id=c("especie","aparicion"))
+
+
+ggplot(data=dfm,aes(x=aparicion,y=value))+geom_point(aes(shape=variable,color=variable))+theme_bw()
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
