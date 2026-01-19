@@ -1,0 +1,391 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 80
+---
+
+# Preprocesado
+
+A veces tenemos que ajustar nuestros datos de entrada para que encajen con lo
+que espera el algoritmo
+
+## Escalado de caracterísicas
+
+Muchas veces los datos de diferentes orígenes, columnas, dimensiones, vienen en
+distintas escalas.
+
+Muy importante para:
+
+-   Algoritmos que utilicen medidas de distancia: kmeans, knearest neighbors
+
+Puede ser interesante para:
+
+-   Regresiones/Redes neuronales para acelerar la convergencia
+
+No es necesario para:
+
+-   Algoritmos basados en árboles
+
+# ¿Por qué es necesario?
+
+Cuando estamos trabajando con dataframes con múltiples variables, cada una
+generalmente se mueve en un rango diferente.
+
+Ejemplo a veces tenemos datos en diferents métricas: distancia, superficie,
+temperatura energía, etc.. o aunque se trata de las mismas métricas se mueven en
+rangos diferentes.
+
+Para que los datos de las diferentes dimensiones sean comparables recurrimos al
+reescalado de dichas variables.
+
+### Estandarización
+
+El resultado consiste en dejar nuestros datos con media 0 y varianza 1: $$
+X_n=\frac{X-\mu}{\sigma}
+$$
+
+### Normalización
+
+Las dos **normalizaciones más comunes** son:
+
+Podemos maximizar para dejar todos nuestros datos en el rango \[0,1\]: $$
+X_n=\frac{X- min\{X\} }{max\{X\}-min\{X\}}
+$$ A veces existen variaciones de esta normalización. El máximo y el mínimo
+puede ser peligroso si tenemos outliers, es posible que primero tengamos que
+eliminarlos. También podemos utilizar percentiles.
+
+Existen infinidad de formas diferentes de normalizar los datos.
+
+#### Ejemplo proteinas
+
+Dataset extraido de:
+https://archive.ics.uci.edu/ml/datasets/Mice+Protein+Expression
+
+El conjunto de datos consiste en los niveles de expresión de 77 proteínas /
+modificaciones de proteínas que produjeron señales detectables en la fracción
+nuclear del cortex. Hay 38 ratones de control y 34 ratones trisómicos (síndrome
+de Down), para un total de 72 ratones. En los experimentos, se registraron 15
+mediciones de cada proteína por muestra / ratón. Por lo tanto, para ratones de
+control, hay 38x15, o 570 mediciones, y para ratones trisómicos, hay 34x15, o
+510 mediciones. El conjunto de datos contiene un total de 1080 mediciones por
+proteína. Cada medida puede considerarse como una muestra / ratón independiente.
+
+Las ocho clases de ratones se describen en función de características como el
+genotipo, el comportamiento y el tratamiento. Según el genotipo, los ratones
+pueden ser de control o trisómicos. Según el comportamiento, algunos ratones han
+sido estimulados para aprender y otros no, para evaluar el efecto del
+medicamento memantina en la recuperación de la capacidad de aprender en ratones
+trisómicos, algunos ratones han sido inyectado con la droga y otros no.
+
+Clases \* c-CS-s: ratones de control, estimulados para aprender, inyectados con
+solución salina (9 ratones) \* c-CS-m: ratones de control, estimulados para
+aprender, inyectados con memantina (10 ratones) \* c-SC-s: ratones de control,
+no estimulados para aprender, inyectados con solución salina (9 ratones) \*
+c-SC-m: ratones de control, no estimulados para aprender, inyectados con
+memantina (10 ratones)
+
+-   t-CS-s: ratones con trisomía, estimulados para aprender, inyectados con
+    solución salina (7 ratones)
+-   t-CS-m: ratones con trisomía, estimulados para aprender, inyectados con
+    memantina (9 ratones)
+-   t-SC-s: ratones con trisomía, no estimulados para aprender, inyectados con
+    solución salina (9 ratones)
+-   t-SC-m: ratones con trisomía, no estimulados para aprender, inyectados con
+    memantina (9 ratones)
+
+Los niveles absolutos de expresión de un gen no son comprarables con los de
+otro. Para hacerlo comparables es necesario que todos los niveles de expresión
+se muevan en los mismos rangos.
+
+![](https://upload.wikimedia.org/wikipedia/commons/1/14/Extended_Central_Dogma_with_Enzymes_gl.png)
+
+```{r}
+mouse<-read.csv("data/Data_Cortex_Nuclear.csv")
+#mouse_data<-mouse[,c(2:78,79)]
+mouse_data<-mouse[,c(2:78,82)]
+head(mouse_data)
+```
+
+Comprobamos que los margenes en los que se mueve el nivel de expresión de cada
+gen es muy diferente y los hace dificilmente comparables.
+
+```{r}
+summary(mouse_data)
+```
+
+```{r}
+library(ggplot2)
+options(repr.plot.height=4,repr.plot.width=6,repr.plot.res = 200)
+
+ggplot(mouse_data,aes(x=DYRK1A_N,y=pCAMKII_N,color=class))+geom_point(size=0.1)+ coord_fixed() 
+```
+
+Tras aplicar una normalización podemos comparar su nivel de expresión con mayor
+claridad y ver que influye en cada clase:
+
+```{r}
+library(pracma)
+mouse_data_noclass<-mouse_data
+mouse_data_noclass$class<-NULL
+gem_m<-colMeans(mouse_data_noclass,na.rm = T)
+gem_sd<-sapply(mouse_data_noclass, sd,na.rm=T)
+mnCols<-repmat(gem_m,n = nrow(mouse_data_noclass),m=1)
+sdCols<-repmat(gem_sd,n = nrow(mouse_data_noclass),m=1)
+mouse_data_norm<-(mouse_data_noclass-mnCols)/sdCols
+mouse_data_norm$class<-mouse_data$class
+```
+
+```{r}
+# Otra forma de hacer lo mismo utilizando funciones de R
+mouse_data_noclass<-mouse_data
+mouse_data_noclass$class<-NULL
+
+mouse_data_norm<-as.data.frame(apply(mouse_data_noclass,2,scale,center=TRUE,scale=TRUE))
+mouse_data_norm$class<-mouse_data$class
+```
+
+```{r}
+summary(mouse_data_norm)
+```
+
+```{r}
+ggplot(mouse_data_norm,aes(x=DYRK1A_N,y=pCAMKII_N,color=class))+geom_point(size=0.1)+ coord_fixed() 
+```
+
+### Ejemplo
+
+Recuperemos el ejemplo de la predicción de la potencia de generación de una
+central de ciclo combinado
+
+El conjunto de datos contiene 9568 puntos de datos recopilados de una Central de
+Ciclo Combinado durante 6 años (2006-2011), cuando la planta de energía se puso
+a funcionar con carga completa. Las características consisten en variables
+ambientales promedio por hora, Temperatura (T), Presión ambiente (AP), Humedad
+relativa (HR) y Vacío de escape (V) para predecir la producción neta de energía
+eléctrica por hora (EP) de la planta.
+
+Las características consisten en variables ambientales promedio por hora -
+Temperatura (AT) en el rango de 1.81 ° C y 37.11 ° C, - Presión ambiental (AP)
+en el rango de 992.89-1033.30 milibares, - Humedad relativa (HR) en el rango de
+25.56% a 100.16% - Vacío de escape (V) en el rango de 25.36-81.56 cm Hg -
+Producción neta de energía eléctrica por hora (EP) 420.26-495.76 MW
+
+Los promedios se toman de varios sensores ubicados alrededor de la planta que
+registran las variables ambientales cada segundo. Las variables se dan sin
+normalización.
+
+https://archive.ics.uci.edu/ml/datasets/Combined+Cycle+Power+Plant
+
+Cada columna, cada variable viene uno un rango de funcionamiento diferente y es
+dificil comparalro entre ellos.
+
+```{r}
+powerplant<-read.csv("data/powerplant.csv")
+```
+
+```{r}
+idx<-sample(1:nrow(powerplant),nrow(powerplant)*0.7)
+powerplant.train<-powerplant[idx,]
+powerplant.test <-powerplant[-idx,]
+```
+
+```{r}
+library(GGally)
+options(repr.plot.height=4,repr.plot.width=6)
+ggpairs(powerplant.train, 
+        lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
+       #lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
+       )
+```
+
+```{r}
+set.seed(1234)
+
+model_powerplant<-lm(PE~.,data=powerplant.train)
+summary(model_powerplant)
+```
+
+```{r}
+powerplant.test$pe_est<-predict(model_powerplant,powerplant.test)
+paste("Error cuadrático medio",sqrt(mean((powerplant.test$PE-powerplant.test$pe_est)^2)))
+```
+
+Podemos escalar nuestros datos para que todos esten en el mismo rango.
+
+Habría que hacerlo solo con los elementos de train, porque se supone que los
+datos de test no los hemos visto nunca.
+
+```{r}
+#gem_m<-colMeans(powerplant.train)
+#gem_sd<-sapply(powerplant.train, sd,na.rm=T)
+#mnCols<-repmat(gem_m,n = nrow(powerplant.train),m=1)
+#sdCols<-repmat(gem_sd,n = nrow(powerplant.train),m=1)
+
+#powerplant_norm.train<- (powerplant.train-mnCols)/sdCols
+#preProcValues$mean
+#preProcValues$std
+```
+
+```{r}
+library(dplyr)
+preProcValues <- powerplant.train |> select(-PE) |> caret::preProcess( method = c("center", "scale"))
+
+powerplant_norm.train<-predict(preProcValues, powerplant.train)
+summary(powerplant_norm.train)
+```
+
+```{r}
+ggpairs(powerplant_norm.train, 
+        lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
+       )
+```
+
+```{r}
+model_powerplant_norm<-lm(PE~.,data=powerplant_norm.train)
+summary(model_powerplant_norm)
+```
+
+```{r}
+powerplant_norm.train$pe_est<-predict(model_powerplant_norm,powerplant_norm.train)
+paste("Error cuadrático medio",sqrt(mean((powerplant_norm.train$PE-powerplant_norm.train$pe_est)^2)))
+```
+
+```{r}
+powerplant_norm.test<-predict(preProcValues, powerplant.test)
+
+powerplant_norm.test$pe_est<-predict(model_powerplant_norm,powerplant_norm.test)
+paste("Error cuadrático medio",sqrt(mean((powerplant_norm.test$PE-powerplant_norm.test$pe_est)^2)))
+```
+
+```{r}
+library(microbenchmark)
+set.seed(50)
+mb<-microbenchmark(lm(PE~.,data=powerplant.train),times=1000)
+print(mb)
+set.seed(50)
+mb<-microbenchmark(lm(PE~.,data=powerplant_norm.train),times=1000)
+print(mb)
+```
+
+```{r}
+?microbenchmark
+```
+
+```{r}
+set.seed(50)
+mb<-microbenchmark(glm(PE~.,data=powerplant.train),times=1000)
+print(mb)
+set.seed(50)
+mb<-microbenchmark(glm(PE~.,data=powerplant_norm.train),times=1000)
+print(mb)
+```
+
+## Valores no disponibles / Missing Values
+
+Son valores para los cuales no tenemos ninguna medida, se representan con un NA.
+
+Pertenecen a valores perdidos que no se han podido recuperar, errores de medida,
+perdidas de datos, etc..
+
+En R los detectamos con:
+
+is.na(x) y podemos reemplazar su valor con la media, moda, mediana, etc...
+
+o simplemente eliminarlos: na.omit(x)
+
+Si estamos trabajando con series temporales es posible que queramos hacer una
+interpolación de los valores perdidos:
+
+zoo::na.approx(x)
+
+```{r}
+data<-c(1,3,NA,6)
+data
+```
+
+```{r}
+is.na(data)
+```
+
+```{r}
+mouse<-read.csv("data/Data_Cortex_Nuclear.csv")
+#mouse_data<-mouse[,c(2:78,79)]
+summary(mouse)
+```
+
+```{r}
+sapply(mouse,function(x) sum(is.na(x)))
+```
+
+```{r}
+which(is.na(mouse$pMTOR_N))
+```
+
+```{r}
+mouse_no_na<-na.omit(mouse)
+nrow(mouse_no_na)
+```
+
+```{r}
+#Los índices que NO ha eliminado son:
+length(na.action(na.omit(mouse)))
+```
+
+```{r}
+str(na.action(na.omit(mouse)))
+```
+
+```{r}
+nrow(mouse)
+nrow(na.omit(mouse))
+nrow(mouse)-nrow(na.omit(mouse))
+```
+
+```{r}
+na.action(na.omit(mouse))
+```
+
+```{r}
+head(na.omit(mouse))
+```
+
+Podemos reemplazar su valor por la media de esa columna.
+
+Vamos a ver tres formas diferentes de hacer lo mismo.
+
+```{r}
+mouse_data<-mouse[,2:77]
+```
+
+```{r}
+for (i in 1:ncol(mouse_data)){
+    mouse_data[,i]<-replace(mouse_data[,i],is.na(mouse_data[,i]),mean(mouse_data[,i],na.rm=T))
+}
+```
+
+```{r}
+mouse_data=as.data.frame(sapply(mouse_data,function(mcol) replace(mcol, is.na(mcol), mean(mcol, na.rm = TRUE))))
+```
+
+```{r}
+library(zoo)
+mouse_data=na.aggregate(mouse_data,FUN=mean)
+```
+
+## Outliers
+
+Un outlier es una obervación que se encuentra a una distancia **anormal** de
+otros valores de la muestra.
+
+La definición está abierta, todo depende de que datos se quieran descartar
+(reemplazar por NA).
+
+Los podemos identificar mediate diagramas de dispersión o diagramas de cajas.
+
+Una forma podría ser considerar outlier todo lo que esté fuera del rango: $$
+{\big [}Q_{1}-k(Q_{3}-Q_{1}),Q_{3}+k(Q_{3}-Q_{1}){\big ]}
+$$ Donde un valor típico de $k$ es 1.5
+
+Lo podemos reemplazar por un valor extremo, por la media, moda, etc...o
+descartarlo al igual que los NA
