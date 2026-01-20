@@ -22,13 +22,15 @@ bwt$smoker <- factor(bwt$smoker, labels=c('No','Yes'))
 Para NO fumadores
 
 ```{r}
-
+t<-t.test(bwt[bwt$smoker=='No','Birthweight'], conf.level = 0.90)
+t
 ```
 
 Para SI fumadores
 
 ```{r}
-
+library(tidyverse)
+bwt |> filter(smoker=='Yes') |> select(Birthweight) |> t.test()
 ```
 
 ```{r}
@@ -43,8 +45,15 @@ Pintar una curva donde se represente en el eje Y la probabilidad de encontrar al
 
 Esto se haría utilizando una función binomial donde la probabilidad de que alguien esté infectado es 5/1000. x sería el número de personas y es un valor que puede ir de 1 hasta 1000. Usa la función dbinom.
 
-```{r}
 
+
+```{r}
+p <- 5/1000
+df_covid <- data.frame(n_personas=0:1000)
+
+df_covid$prob <- 1-dbinom(0,size=df_covid$n_personas, p=p)
+
+ggplot(data=df_covid, aes(x=n_personas, y=prob))+geom_line(color="darkblue")
 ```
 
 Pintar una curva donde se represente en el eje Y la probabilidad de encontrar exactamente dos contagiados en función del número de personas dado por el eje X
@@ -52,17 +61,28 @@ Pintar una curva donde se represente en el eje Y la probabilidad de encontrar ex
 ```{r}
 
 
+df_covid$prob_2Cont <- dbinom(2, size=df_covid$n_personas, p)
+
+ggplot(data=df_covid, aes(x=n_personas, y=prob_2Cont))+geom_line(color="darkblue")
 ```
 
 Pintar una curva donde se represente en el eje Y la probabilidad de encontrar dos o más contagiados en función del número de personas dado por el eje X
 
 ```{r}
+df_covid$prob_2MasCont <- 1-pbinom(1, df_covid$n_personas, p)
+
+ggplot(data=df_covid, aes(x=n_personas, y=prob_2MasCont))+geom_line(color="darkblue")+geom_line(color="red", aes(y=prob))
+
 
 ```
 
 Probabilida de encontar 5 o más personas contagiadas en una población de 1000
 
 ```{r}
+df_covid$prob_5MasCont <- 1-pbinom(4, df_covid$n_personas, p)
+
+ggplot(data=df_covid, aes(x=n_personas, y=prob_5MasCont))+geom_line(color="darkblue")+geom_line(color="red", aes(y=prob))
+
 
 
 ```
