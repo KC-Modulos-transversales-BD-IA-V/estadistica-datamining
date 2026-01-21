@@ -1,0 +1,848 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 80
+---
+
+# Principal Component Analysis
+
+### Cambio de bases ortogonales
+
+Supongamos tenemos los siguientes puntos en un espacio vectorial euclideo:
+
+$$
+\vec{p}_1=\begin{bmatrix}
+1\\ 
+1
+\end{bmatrix}
+\;\;\;\;
+\vec{p}_2=\begin{bmatrix}
+-1\\ 
+1
+\end{bmatrix}
+\;\;\;\;
+\vec{p}_3=\begin{bmatrix}
+0\\ 
+-1
+\end{bmatrix}
+\;\;\;\;
+\vec{p}_4=\begin{bmatrix}
+1\\ 
+0
+\end{bmatrix}
+$$
+
+Estos vectores los podemos agrupar en una matrix $X$: $$
+X=\begin{bmatrix}
+{\vec{p}_1}^\intercal\\ 
+{\vec{p}_2}^\intercal\\ 
+{\vec{p}_3}^\intercal\\ 
+{\vec{p}_4}^\intercal
+\end{bmatrix}=
+\begin{bmatrix}
+1&1\\ 
+-1&1\\ 
+0&-1\\ 
+1&0
+\end{bmatrix}
+$$
+
+```{r}
+#| fig-height: 5
+#| fig-width: 5
+
+
+p1<-matrix(c(1,1),ncol=1)
+p2<-matrix(c(-1,1),ncol=1)
+p3<-matrix(c(0,-1),ncol=1)
+p4<-matrix(c(1,0),ncol=1)
+X<-rbind(t(p1),t(p2),t(p3),t(p4))
+options(repr.plot.height=4,repr.plot.width=4)
+plot(X[,1],X[,2],xlim=c(-2,2),ylim = c(-2,2),xlab="x1",ylab="x2")
+abline(c(0,1),col="blue")
+abline(c(0,-1),col="blue")
+abline(h=0,col="red")
+abline(v=0,col="red")
+grid()
+```
+
+Pero queremos cambiar el eje, queremos realizar una transformación lineal del
+espacio vectorial. Nuestro nuevo espacio vectorial vendrá dado por los vectores
+ortonormales: $$
+\vec{u}_1=\begin{bmatrix}
+\frac{1}{\sqrt{2}}\\ 
+\frac{1}{\sqrt{2}}
+\end{bmatrix}
+\;\;\;\;
+\vec{u}_2=\begin{bmatrix}
+\frac{-1}{\sqrt{2}}\\ 
+\frac{1}{\sqrt{2}}
+\end{bmatrix}
+$$
+
+```{r}
+u1<-matrix(c( 1/sqrt(2),1/sqrt(2)),ncol=1)
+u2<-matrix(c(-1/sqrt(2),1/sqrt(2)),ncol=1)
+paste("Son normales porque su norma es ",sum(u1^2))
+paste("Son ortogonales porque su producto escalar es ",t(u1) %*% u2)
+```
+
+Los puntos $p_x$ de nuestro espacio se pueden representar mediante una
+combinación lineal de los vectores $\vec{u}_1$ y $\vec{u}_2$.
+
+$$
+\vec{p}= \sum_i \alpha_i \vec{u}_i
+$$
+
+$$
+\vec{p}_1=\begin{bmatrix}
+1\\ 
+1
+\end{bmatrix}= \sqrt{2}·\vec{u}_1 +  0·\vec{u}_2
+$$ $$
+\vec{p}_2=\begin{bmatrix} 
+-1\\ 
+1
+\end{bmatrix}= 0·\vec{u}_1 +  \sqrt{2}·\vec{u}_2
+$$ $$
+\vec{p}_3=\begin{bmatrix}
+0\\ 
+-1
+\end{bmatrix}= \frac{-1}{\sqrt{2}}·\vec{u}_1 + \frac{-1}{\sqrt{2}}·\vec{u}_2
+$$ $$
+\vec{p}_4=\begin{bmatrix}
+1\\ 
+0
+\end{bmatrix}= \frac{1}{\sqrt{2}}·\vec{u}_1 - \frac{1}{\sqrt{2}}·\vec{u}_2
+$$
+
+Esto nos origina otra matriz con referencia al espacio vectorial $\vec{u_x}$ tal
+que: $$
+U=\begin{bmatrix}
+\sqrt{2}&0\\ 
+0&\sqrt{2}\\ 
+\frac{-1}{\sqrt{2}}&\frac{-1}{\sqrt{2}}\\ 
+\frac{1}{\sqrt{2}}&\frac{-1}{\sqrt{2}}
+\end{bmatrix}
+=
+\begin{bmatrix}
+1&1\\ 
+-1&1\\ 
+0&-1\\ 
+1&0
+\end{bmatrix}·
+\begin{bmatrix}
+\frac{1}{\sqrt{2}}&\frac{-1}{\sqrt{2}}\\ 
+\frac{1}{\sqrt{2}}&\frac{1}{\sqrt{2}}
+\end{bmatrix}
+$$
+
+```{r}
+#| fig-height: 5
+#| fig-width: 5
+
+U<-X %*% cbind(u1, u2)
+plot(U[,1],U[,2],xlim=c(-2,2),ylim = c(-2,2),xlab="u1",ylab="u2")
+abline(c(0,1),col="red")
+abline(c(0,-1),col="red")
+abline(h=0,col="blue")
+abline(v=0,col="blue")
+grid()
+```
+
+```{r fig.height=4, fig.width=4}
+paste("Si queremos recuperar la variable X original:")
+U %*% solve(cbind(u1, u2))
+```
+
+### Distribución de los datos
+
+Los datos no se distribuyen igual entre todas las dimensiones.
+
+Nos interesa encontrar la dirección de máxima variabilidad de los datos para,
+sobre esa dirección (vector), proyectar nuestros datos. $$
+\vec{p}= \sum_i \alpha_i \vec{u}_i
+$$
+
+```{r fig.height=2, fig.width=2}
+library(ggplot2)
+
+#set.seed(123)
+set.seed(124)
+N<-150
+x1<-c(rnorm(N,mean=0,sd=5))
+x2<-c(0.4*x1+rnorm(N,mean=0,sd=2))
+
+mydata<-data.frame(x1,x2)
+ggplot(mydata,aes(x=x1,y=x2))+geom_point(size=0.5)+    
+        xlim(c(-15,15))+ylim(c(-15,15))+
+        theme_bw()
+```
+
+La dirección de máxima dispersión va a venir dada por la **covarianza**:
+
+##### Covarianza
+
+La covarianza es un valor que indica el grado de variación **lineal** conjunta
+de dos variables aleatorias respecto a sus medias.
+
+Supongamos que queremos comparar dos variables aleatorias X e Y:
+
+-   Tendremos alta covarianza (positiva) cuando, para valores altos de X,
+    tengamos mayoritariamente valores altos de Y
+
+-   Tendremos baja covarianza (negativa) cuando, para valores altos de X,
+    tengamos mayoritariamente valores bajos de Y
+
+-   Tendremos covarianza cercana a 0, para valores altos de X, los valores de Y
+    pueden ser altos o bajos por igual
+
+Su formula es la siguiente: $$
+cov(X,Y) = \frac{1}{N} \sum _{i=1}^N \left( x_i-\bar{x} \right)\left( y_i-\bar{y} \right)
+$$
+
+Recordemos la formula de la varianza: $$
+Var(x) =  \frac{1}{N} \sum _{i=1}^N \left( x_i-\bar{x} \right)^2
+$$
+
+La covarianza de una variable aleatoria consigo misma es igual a la varianza: $$
+cov(X,X) = Var(X)
+$$
+
+En R la calculamos con la función *cov(x,y)*
+
+```{r}
+M<-matrix(c(mydata$x1,mydata$x2),ncol=2,byrow = FALSE)
+paste("La covarianza:")
+cov(M)
+paste("es igual al producto de la matriz consigo misma dividido por N-1:")
+t(M) %*% M
+```
+
+```{r}
+#La covarianza es equivante a:
+(t(M) %*% M)/(N-1)
+```
+
+```{r}
+?cov
+```
+
+### Autovectores y autovalores
+
+Un autovector (*eigenvector*) de una matrix $A$, es un vector cuyo valor solo
+cambia por un escalar $\lambda$, llamado autovalor (*eigenvalue*), cuando se
+multiplica por la matriz $A$
+
+```{r}
+A<-matrix(c(1,1,1,3),ncol=2)
+A
+```
+
+\
+
+```{r}
+eigen(A)
+```
+
+```{r}
+v1<-eigen(A)$vectors[,1]
+l1<-eigen(A)$values[1]
+# Multiplicar la matriz A por su autovector v1
+A %*% v1
+# Es equivalente a multiplicar el autovector v1 por su autovalor l1
+matrix(l1*v1,ncol=1)
+```
+
+Esto significa que si tenemos una serie de puntos (en rojo), al ser
+multiplicados por la matriz $A$ se van a **desplazar** siguiendo la
+**dirección** dada por los autovectores con la **magnitud** dada por los
+autovalores.
+
+```{r fig.height=3, fig.width=3}
+N<-20
+df<-data.frame(x1=cos(seq(0,2*pi,length.out = N)),x2=sin(seq(0,2*pi,length.out = N)),
+               x1n=rep(NA,N),x2n=rep(NA,N))
+for (i in 1:nrow(df)){
+    v <- A %*% matrix(unlist(df[i,1:2]),ncol=1)
+    df$x1n[i]<-v[1]
+    df$x2n[i]<-v[2]
+}
+eigv<-eigen(A)$vectors
+
+ggplot(df)+geom_point(aes(x=x1,y=x2),color="red")+
+    geom_point(aes(x=x1n,y=x2n),color="blue")+
+    geom_hline(yintercept = 0,color="gray")+
+    geom_vline(xintercept = 0,color="gray")+
+    geom_abline(intercept = 0,slope = eigv[2,1]/eigv[1,1],color="black")+
+    geom_abline(intercept = 0,slope = eigv[2,2]/eigv[1,2],color="black")+
+    geom_segment(aes(x = x1, y = x2, xend=x1n,yend=x2n),color="gray")+
+    xlim(c(-4,4))+ylim(c(-3.5,3.5))+
+    theme_bw()
+```
+
+### Análisis de componentes principales
+
+En este caso vamos a realizar una transformación de nuestros datos originales en
+un nuevo espacio vectorial.
+
+Nos interesa encontrar la dirección de máxima variabilidad de los datos para,
+sobre esa dirección (vector), proyectar nuestros datos sobre una base
+**ortonormal**.
+
+$$
+\vec{p}= \sum_i \alpha_i \vec{u}_i
+$$
+
+Los autovectores de la matriz de covarianza de nuestros datos o $A^\intercal·A$
+nos proporcionan esa base vectorial sobre la cual proyectar nuestros datos.
+
+-   Cuanto mayor sea el *autovalor*, más importancia, más varianza, tendrá la
+    proyección de los datos sobre el *autovector* correspondiente.
+
+-   Los autovalores de la matriz de covarianza de A coinciden con la diagonal de
+    la matriz de covarianza de la proyección de A sobre la base vectorial de
+    autovectores
+
+```{r}
+M<-matrix(c(mydata$x1,mydata$x2),ncol=2)
+eigv<-eigen(t(M) %*% M)$vector
+eigen(t(M) %*% M)
+eigen(cov(M))
+
+ggplot(mydata,aes(x=x1,y=x2))+geom_point(size=0.5)+    
+        geom_abline(intercept = 0,slope = eigv[2,1]/eigv[1,1],color="red")+
+        geom_abline(intercept = 0,slope = eigv[2,2]/eigv[1,2],color="blue")+
+        xlim(c(-15,15))+ylim(c(-15,15))+
+        theme_bw()+ coord_fixed() 
+```
+
+```{r}
+mydata_rot<-data.frame(x1=M %*% eigv[,1],x2=M %*% eigv[,2])
+
+
+ggplot(mydata_rot,aes(x=x1,y=x2))+geom_point(size=0.5)+    
+        geom_hline(yintercept = 0,color="red")+
+        geom_vline(xintercept = 0,color="blue")+
+        xlim(c(-15,15))+ylim(c(-15,15))+
+        xlab('PC1')+ylab('PC2')+
+        theme_bw()
+```
+
+```{r}
+# Los autovalores de la matriz de covarianza de A  coinciden con 
+# la diagonal de la matriz de covarianza de la proyección de  A  sobre la base vectorial de autovectores
+var(mydata_rot)
+eigen(var(M))$values
+```
+
+### Diferencias entre PCA y regresión lineal
+
+La regresión lineal busca minimizar el error cuadrático medio: $$
+MSE = {1 \over n} \sum_{i=0}^n{(Y-\hat{Y})^2}
+$$ En PCA buscamos maximizar la proyección de nuestros datos sobre la nueva base
+vectorial.
+
+En la siguiente figura se ve claro: \* PCA busca minimizar la distancia de los
+puntos a la línea roja de forma perpendicular (línea discontinua)
+
+-   Regresión linear busca minimizar la distancia de los puntos a la línea verde
+    de forma vertical (línea discontinua)
+
+```{r}
+mydata_pca1<-as.data.frame(x=matrix(mydata_rot$x1,ncol=1) %*% t(eigv[,1]))
+colnames(mydata_pca1)<-c("x1pca","x2pca")
+mydata_total<-cbind(mydata,mydata_pca1)
+
+linear_model<-lm(mydata,formula=x2~x1)
+mydata_total$x2lm<-predict(linear_model,mydata)
+
+ggplot(mydata_total[1:10,],aes(x=x1,y=x2))+
+        geom_point(aes(x=x1pca,y=x2pca),color="red")+
+        geom_abline(intercept = 0,slope = eigv[2,1]/eigv[1,1],color="red")+
+        #geom_abline(intercept = 0,slope = eigv[2,2]/eigv[1,2],color="blue")+
+        geom_segment(aes(x = x1, y = x2, xend=x1pca,yend=x2pca),color="red",linetype = "dashed")+
+        geom_abline(intercept = linear_model$coefficients[1],slope = linear_model$coefficients[2],color="#00FF88")+
+        geom_segment(aes(x = x1, y = x2, xend=x1,yend=x2lm),color="#00FF88",linetype = "dashed")+
+        geom_point(size=1)+
+        xlim(c(-12,12))+ylim(c(-9,9))+
+        theme_bw()
+```
+
+https://www.reddit.com/r/interestingasfuck/comments/k40puy/line_of_best_fit_visualised/
+
+### Calculo en R
+
+En R podemos usar el comando
+
+```         
+prcomp(mydata)
+```
+
+para hacer un PCA, devuelve 3 listas de interés:
+
+-   x : aquí se encuentran los datos de la matriz original proyectados sobre los
+    autovectores. Están ordenados de mayor a menor autovalor.
+-   sdev: Es la desviación estandard de cada columna de x. Su cuadrado es el
+    correspondiente autovalor de cov(x).
+-   rotation: matriz con los autovectores
+
+```{r}
+M<-matrix(c(mydata$x1,mydata$x2),ncol=2)
+print("Mutiplicacion")
+eigen(t(M)%*%M)
+print("Covarianza")
+eigen(cov(mydata))
+print("Función prcomp")
+prmydata<-prcomp(mydata,center = FALSE, scale. = FALSE)
+prmydata
+
+plot(prmydata$x[,1:2])
+```
+
+```{r}
+# En prmydata$x tenemos los datos ya transformados. 
+# Evidentemente sus autovectores serán del tipo [0,1] y [1,0], coincidirán con el eje de coordenadas.
+eigen(cov(prmydata$x))
+```
+
+Evidentemente el resultado de la matrix 'prmydata\$x' coincide con el obtenido
+de la forma anterior si utilizamos la matriz de rotación con los datos
+originales:
+
+```{r}
+print("Valor dado por la función prcomp")
+prmydata$x[1,]
+print("Multiplicando por la matriz de rotación")
+matrix(unlist(mydata[1,]),nrow=1) %*% prmydata$rotation
+print("Con función predict")
+predict(prmydata,newdata = mydata[1,])
+```
+
+Si nos llega un nuevo vector podemos aplicar la transformada para colocarla en
+el espacio proyectado por los autovectores del PCA:
+
+```{r}
+new_vector<-matrix(c(1,1),nrow=1)
+colnames(new_vector)<-c('x1','x2')
+print("Multiplicando por la matriz de rotación")
+new_vector %*% prmydata$rotation
+print("Con Predict")
+predict(prmydata,newdata = new_vector)
+```
+
+La matriz de autovalores (también llamada matriz de rotación) es una matriz
+ortogonal. Esto signigica que su inversa es su traspuesta: $$
+{V} ^{\operatorname {T} }=\mathbf {V} ^{-1}
+$$
+
+```{r}
+solve(prmydata$rotation)
+```
+
+```{r}
+t(prmydata$rotation)
+```
+
+Para obtener el valor original solo tienes que multiplicar el resultado otra
+vez:
+
+```{r}
+new_vector<-matrix(c(1,1),nrow=1,dimnames=list(1,c('x1','x2')))
+out<-predict(prmydata,newdata = new_vector)
+```
+
+```{r}
+out %*% t(prmydata$rotation)
+```
+
+#### PCA como compresión de información
+
+Podemos usar PCA para comprimir los datos, reducir la información a los
+autovectores más importantes y eliminar el ruido
+
+```{r}
+mydata_pca<-predict(prmydata,newdata = mydata)
+```
+
+```{r}
+mydata_pca[,2] <- 0
+```
+
+```{r}
+mydata_filtered<- mydata_pca %*% t(prmydata$rotation)
+```
+
+```{r}
+plot(mydata$x1,mydata$x2)
+points(mydata_filtered[,1],mydata_filtered[,2],col="red")
+```
+
+mydata_pca
+
+#### Ejemplo clima ciudades
+
+https://en.wikipedia.org/wiki/List_of_cities_by_sunshine_duration
+
+https://en.wikipedia.org/wiki/List_of_cities_by_temperature
+
+```{r}
+df_sunny<-read.csv('data/cities_sunny.csv')
+head(df_sunny)
+```
+
+```{r}
+df_sunny$Year<-NULL
+df_sunny$Ref.<-NULL
+```
+
+```{r}
+df_temp<-read.csv('data/cities_temp.csv')
+head(df_temp)
+```
+
+```{r}
+df_temp$Year<-NULL
+df_temp$Ref.<-NULL
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+get_celsius<-function(col){
+    as.numeric(gsub('−','-',gsub('\\(.*\\)','',col)))
+}
+```
+
+```{r}
+bind_cols(
+list(df_temp |> select(Country,City),
+df_temp |>
+  select(-Country,-City) |>
+  mutate_all(~get_celsius(.)) )
+) -> df_temp
+head(df_temp)
+```
+
+```{r}
+#https://rpubs.com/williamsurles/293454
+df_temp |> inner_join(df_sunny, by=c('Country','City'), suffix=c('_temp','_sun')) -> df_meteo
+rownames(df_meteo)<-paste(df_meteo$Country,df_meteo$City,sep = '-')
+df_meteo$City<-NULL
+df_meteo$Country<-NULL
+str(df_meteo)
+```
+
+```{r}
+pr_meteo<-prcomp(df_meteo,center = TRUE, scale = TRUE)
+plot(pr_meteo$sdev^2/sum(pr_meteo$sdev^2),main="Autovalores")
+```
+
+```{r fig.height=5, fig.width=12}
+plot(pr_meteo$x[,c(1,2)])
+
+city <- 'Spain-Barcelona'
+points(pr_meteo$x[rownames(pr_meteo$x)==city,1],
+       pr_meteo$x[rownames(pr_meteo$x)==city,2]
+       ,col='red', pch='*', cex=3)
+
+
+city <- 'Spain-Madrid'
+points(pr_meteo$x[rownames(pr_meteo$x)==city,1],
+       pr_meteo$x[rownames(pr_meteo$x)==city,2]
+       ,col='blue',pch='*',cex=3)
+
+
+city<-'United ArabEmirates-Dubai'
+points(pr_meteo$x[rownames(pr_meteo$x)==city,1],
+       pr_meteo$x[rownames(pr_meteo$x)==city,2]
+       ,col='green',pch='*',cex=3)
+
+city<-'Germany-Berlin'
+points(pr_meteo$x[rownames(pr_meteo$x)==city,1],
+       pr_meteo$x[rownames(pr_meteo$x)==city,2]
+       ,col='brown',pch='*',cex=3)
+
+
+city<-'Colombia-Bogotá'
+points(pr_meteo$x[rownames(pr_meteo$x)==city,1],
+       pr_meteo$x[rownames(pr_meteo$x)==city,2]
+       ,col='brown',pch='o',cex=3)
+```
+
+```{r}
+library("FactoMineR")
+```
+
+```{r}
+res.pca <- PCA(df_meteo )
+```
+
+```{r}
+head(res.pca$eig)
+```
+
+```{r}
+plot(res.pca$eig[,"eigenvalue"])
+```
+
+```{r}
+plot(res.pca, choix = "ind", autoLab = "yes")
+```
+
+```{r}
+plot(res.pca, choix = "var", autoLab = "yes")
+```
+
+```{r}
+pr_meteo$rotation[rownames(pr_meteo$rotation) 
+                  %in% c('Jun_sun','Jul_sun','May_temp','Oct_temp')
+                  ,1:5]
+```
+
+```{r}
+pr_meteo$sdev[1:5]
+```
+
+```{r}
+res.pca$var$coord/pr_meteo$rotation[,1:5]
+```
+
+```{r}
+res.pca$var
+```
+
+```{r}
+#rowSums(res.pca$var$coord^2)
+res.pca$var$coord^2
+```
+
+#### Ejemplo Iris
+
+Vamos a aplicar PCA al dataset de Iris
+
+```{r}
+iris_data<-iris[,1:4]
+
+for (i in 1:ncol(iris_data)){     
+    mn<-mean(iris_data[,i],na.rm = T)
+    sd<-sd(iris_data[,i],na.rm = T)
+    
+    iris_data[,i]<-(iris_data[,i]-mn)/sd    
+}
+```
+
+```{r}
+#Utilizamos prcomp para calcular el pca
+priris<-prcomp(iris_data,center = FALSE, scale = FALSE)
+#Comprobamos que los dos primeros autovalores contienen aproximadamente el 90% de la varianza
+plot(priris$sdev^2/sum(priris$sdev^2),main="Autovalores")
+```
+
+```{r}
+number_of_clusters<-2
+number_of_pca<-2
+my_clust<-kmeans(priris$x[,c(1:number_of_pca)],number_of_clusters)
+plot(priris$x[,c(1,2)],col=my_clust$cluster)
+text(x=my_clust$centers[,1], 
+     y=my_clust$centers[,2], 
+     cex=1, pos=4, labels=(1:nrow(my_clust$centers)),col="blue")
+
+table(iris$Species,my_clust$cluster)
+```
+
+```{r}
+library(dbscan)
+number_of_pca<-2
+#my_clust<-hdbscan(priris$x[,c(1:number_of_pca)],minPts=4)
+my_clust<-dbscan(priris$x[,c(1:number_of_pca)],minPts=5,eps=0.8)
+plot(priris$x[,c(1,2)],col=my_clust$cluster)
+table(iris$Species,my_clust$cluster)
+```
+
+#### Ejemplo proteinas
+
+Vamos a aplicar PCA al dataset de proteinas
+
+```{r}
+mouse<-read.csv("data/Data_Cortex_Nuclear.csv")
+mouse_data<-mouse[,2:78]
+for (i in 1:ncol(mouse_data)){
+        
+    mn<-mean(mouse_data[,i],na.rm = T)
+    sd<-sd(mouse_data[,i],na.rm = T)
+    mouse_data[is.na(mouse_data[,i]),i]<-mn
+    
+    mouse_data[,i]<-(mouse_data[,i]-mn)/sd    
+}
+```
+
+```{r}
+#Utilizamos prcomp para calcular el pca
+prmouse_data<-prcomp(mouse_data,center = FALSE, scale = FALSE)
+#Comprobamos que los 20 primeros autovalores contienen aproximadamente el 90% de la varianza
+plot(cumsum(prmouse_data$sdev^2/sum(prmouse_data$sdev^2)),main="Autovalores")
+grid()
+```
+
+```{r}
+head(mouse)
+```
+
+```{r}
+prmouse_data_pca<-as.data.frame(prmouse_data$x[,c("PC1","PC2","PC3")])
+prmouse_data_pca$cl <- mouse[,"class"]
+prmouse_data_pca$Genotype <- mouse[,"Genotype"]
+prmouse_data_pca$Treatment <- mouse[,"Treatment"]
+library(ggplot2)
+ggplot(prmouse_data_pca,aes(x=PC2,y=PC3,color=Treatment))+geom_point()
+ggplot(prmouse_data_pca,aes(x=PC1,y=PC2,color=Genotype))+geom_point()
+```
+
+Vamos a probar a hacer un *k-means* con solo dos dimensiones del PCA
+
+```{r}
+mouse_data14<-prmouse_data$x[,1:2]
+q<-c()
+for (k in 1:20){
+    myclust<-kmeans(mouse_data14,k)
+    q[k]<-myclust$betweenss/myclust$totss
+}
+plot(q)
+```
+
+```{r}
+set.seed(123)
+myclustpca<-kmeans(mouse_data14,10)
+myclust<-kmeans(mouse_data,10)
+
+table(mouse$class,myclustpca$cluster)
+table(mouse$class,myclust$cluster)
+table(mouse$Behavior,myclustpca$cluster)
+table(mouse$Behavior,myclust$cluster)
+
+
+plot(prmouse_data$x[,c(1,2)],col=myclustpca$cluster)
+text(x=myclustpca$centers[,1], y=myclustpca$centers[,2], cex=1, pos=4, labels=(1:nrow(myclustpca$centers)),col="blue")
+```
+
+#### Ejemplo regresión logística con PCA - dataset Cancer
+
+https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic)
+
+Este dataset muestra tejidos de diferentes tumores de mama. Algunos son benignos
+y otros malignos.
+
+Vamos a hacer un clasificador para diferenciarlos.
+
+```{r}
+library(pracma)
+library(dplyr)
+set.seed(1234)
+wdbc<-read.csv("data/wdbc.data",col.names=c("id","diagnosis",paste0("c",1:30)), stringsAsFactor=T)
+str(wdbc)
+```
+
+```{r}
+wdbc<-wdbc %>% select(-id)
+
+idx<-sample(1:nrow(wdbc),round(nrow(wdbc)*0.7))
+wdbc.train<-wdbc[idx,]
+wdbc.test<-wdbc[-idx,]
+```
+
+```{r}
+prwdbc<-prcomp(wdbc.train %>% select(-diagnosis),center = TRUE, scale. = TRUE)
+#Comprobamos que los 5 primeros autovalores contienen aproximadamente el 90% de la varianza
+plot(cumsum(prwdbc$sdev^2/sum(prwdbc$sdev^2)),main="Autovalores")
+grid()
+```
+
+```{r}
+wdbc.train_pca <-as.data.frame(prwdbc$x[,1:2])
+wdbc.train_pca$diagnosis <- wdbc.train$diagnosis
+summary(wdbc.train_pca)
+```
+
+```{r}
+ggplot(wdbc.train_pca, aes(x=PC1, y=PC2, color=diagnosis))+geom_point()
+```
+
+```{r}
+model_wdbc<-glm(data=wdbc.train_pca,formula=diagnosis~.,family=binomial(link='logit')) 
+summary(model_wdbc)
+```
+
+```{r}
+y_predict<-predict(model_wdbc,wdbc.train_pca)
+y_factor<-as.factor(ifelse(y_predict<0,"B","M"))
+
+table(real=wdbc.train$diagnosis, pred=y_factor)
+```
+
+```{r}
+wdbc.test_pca <- as.data.frame(predict(prwdbc, wdbc.test %>% select(-diagnosis))[,c("PC1","PC2")])
+summary(wdbc.test_pca)
+```
+
+```{r}
+y_predict<-predict(model_wdbc,wdbc.test_pca)
+y_factor<-as.factor(ifelse(y_predict<0,"B","M"))
+
+table(real=wdbc.test$diagnosis, pred=y_factor)
+```
+
+```{r}
+cf_m<-caret::confusionMatrix(data= y_factor, reference = wdbc.test$diagnosis,positive="M")
+cf_m
+```
+
+```{r}
+paste("La precisión es:",cf_m$table[2,2]/sum(cf_m$table[2,]))
+paste("La exhaustividad (recall, sensitivity) es:",cf_m$table[2,2]/sum(cf_m$table[,2]))
+paste("La exactitud (accuracy) es:",(cf_m$table[2,2]+cf_m$table[1,1])/sum(cf_m$table))
+
+bnt_test=binom.test(cf_m$table[2,2]+cf_m$table[1,1],sum(cf_m$table))
+paste("El intervalo de confianza de la exactitud es: [",paste0(bnt_test$conf.int,collapse=","),"]")
+```
+
+```{r}
+library(ROCR)
+
+p<-predict(model_wdbc,wdbc.test_pca,type="response")
+
+pr <- prediction(p, wdbc.test$diagnosis)
+
+prf_auc=performance(pr, measure = "auc")
+paste("The AUC is",prf_auc@y.values[[1]])
+
+
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+```
+
+```{r}
+wdbc.train
+```
+
+```{r}
+model_wdbc_lin<-glm(data=wdbc.train,formula=diagnosis~.,family=binomial(link='logit')) 
+summary(model_wdbc_lin)
+```
+
+```{r}
+y_predict<-predict(model_wdbc_lin,wdbc.train)
+y_factor<-as.factor(ifelse(y_predict<0,"B","M"))
+
+table(real=wdbc.train$diagnosis, pred=y_factor)
+```
+
+```{r}
+y_predict<-predict(model_wdbc_lin,wdbc.test)
+y_factor<-as.factor(ifelse(y_predict<0,"B","M"))
+
+table(real=wdbc.test$diagnosis, pred=y_factor)
+```

@@ -1,0 +1,821 @@
+---
+title: "Bayes: MLE y MAP"
+format: html
+editor: visual
+---
+
+# Distribución conjunta
+
+La distribución conjunta de dos variables A y B se refiere a la distribución de probabilidad de la intersección de ambos eventos. Se representa como P(B,A) o P(B $\cap$ A)
+
+## Variables discretas
+
+AVISO: ESTOS DATOS SON PURAMENTE INVENTADOS
+
+Imagina que tenemos una tabla de contingencia que presenta el número de personas que les gusta Star Trek o StarWars función del sexo:
+
+```{r}
+tbl<-as.table(matrix(c(122,58,214,120),dimnames = list(c("Star Trek","Star Wars"),c("Mujeres","Hombres")),nrow=2))
+tbl
+```
+
+**Probabilidad marginal**
+
+En esta población, ¿Cual es la probabilidad de que a alguien le guste Star Wars? $$
+P(\text{Star Wars})=\frac{58+120}{122+214+58+120}=0.34
+$$
+
+```{r}
+print("La probabilidad de que a alguien le gusta Star Trek o Star Wars es:")
+rowSums(tbl)/sum(tbl)
+```
+
+**Probabilidad conjunta**
+
+¿Cual es la probabilidad de por puro azar seleccionemos un hombre que le guste starwars? $$
+P(\text{Hombre,Star Wars})=\frac{120}{122+214+58+120}=0.233
+$$
+
+```{r}
+print("La matriz de la probabilidad conjunta es:")
+prop.table(tbl)
+```
+
+**Probabilidad condicional**
+
+Suponiendo que nos fijemos solamente en los hombres, ¿cual es la probabilidad de que Star Wars sea la película más interesante?
+
+$$
+P(\text{Star Wars|Hombre})=\frac{120}{214+120}=0.359
+$$
+
+```{r}
+print("La matriz condicional para mujeres y hombres:")
+prop.table(tbl,margin = 2)
+```
+
+Suponiendo que nos fijemos solamente en los fans de Star Wars, ¿cual es la probabilidad de que el fan sea hombre?
+
+$$
+P(\text{Hombre|Star Wars})=\frac{120}{120+58}=0.674
+$$
+
+```{r}
+print("La matriz condicional para Star Trek y Star Wars :")
+prop.table(tbl,margin = 1)
+```
+
+**Propiedades** $$
+\begin{split}
+P(\text{Star Wars,Hombre})&=P(\text{Hombre,Star Wars}) \\
+P(\text{Hombre,Star Wars})&=P(\text{Hombre|Star Wars})·P(\text{Star Wars}) \\
+P(\text{Star Wars,Hombre})&=P(\text{Star Wars|Hombre})·P(\text{Hombre})
+\end{split}
+$$
+
+## Variables continuas
+
+### Dos variables independientes
+
+En este caso: P(B,A)=P(B)·P(A)
+
+Es fácil verlo porque su matriz de covarianza se parece a una matriz diagonal.
+
+```{r}
+N<-10000
+A<-rnorm(N,mean=0,sd=0.5)
+B<-rnorm(N,mean=0,sd=1)
+df<-data.frame(A,B)
+
+print(paste("Matriz de covarianza:"))
+cov(df)
+
+library(ggplot2)
+ggplot(df, aes(x=A, y=B))+geom_density2d(aes(colour=..level..)) + 
+  stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
+  scale_fill_continuous(low="green",high="red") +    
+  geom_point(alpha=0.2,size=0.1)+
+  theme_bw()+theme(legend.position="none")+xlim(c(-5,5))+ylim(c(-5,5))
+```
+
+Como son independientes, la probabilidad condicional de B respecto a A es igual a la probabilidad de B
+
+P(B\|A)=P(B)
+
+```{r}
+dfPartialProbs<-data.frame(B=B,var="P(B)")
+dfPartialProbs<-rbind(dfPartialProbs,data.frame(B=df$B[df$A>-0.5 & df$A<0.5],var="P(B|-0.5<A<0.5)"))
+
+
+ggplot(dfPartialProbs, aes(x=B,color=var))+geom_density()+
+  theme_bw()
+```
+
+### Dos variables dependientes
+
+En este caso: P(B,A)=P(B\|A)·P(A)=P(A,B)=P(A\|B)·P(B)
+
+En este caso la matriz de covarianza no es diagonal.
+
+```{r}
+N<-10000
+A<-rnorm(N,mean=0,sd=2)
+B<-A+rnorm(N,mean=0,sd=2)
+df<-data.frame(A,B)
+
+print(paste("Matriz de covarianza:"))
+cov(df)
+
+library(ggplot2)
+ggplot(df, aes(x=A, y=B))+geom_density2d(aes(colour=..level..)) + 
+  stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
+  scale_fill_continuous(low="green",high="red") +    
+  geom_point(alpha=0.1,size=0.1)+
+  theme_bw()+theme(legend.position="none")+xlim(c(-10,10))+ylim(c(-10,10))
+```
+
+Como son dependientes, la probabilidad condicional de B respecto a A es diferente a la probabilidad de B $$
+P(B|A) \neq P(B)
+$$
+
+```{r}
+dfPartialProbs<-data.frame(B=B,var="P(B)")
+dfPartialProbs<-rbind(dfPartialProbs,data.frame(B=df$B[df$A>-0.5 & df$A<0.5],var="P(B|-0.5<A<0.5)"))
+
+dfPartialProbs<-rbind(dfPartialProbs,data.frame(B=df$B[df$A>3 & df$A<4],var="P(B|3<A<4)"))
+
+
+ggplot(dfPartialProbs, aes(x=B,color=var))+geom_density()+
+  theme_bw()
+```
+
+# Teorema de Bayes
+
+El teorema de Bayes describe la probabilidad de un evento basado en conocimientos previos que puede estar relacionado con el evento. Su fórmula es bastente simple: $$
+P(A|B)=\frac{P(B|A)·P(A)}{P(B)}=\frac{P(B,A)}{P(B)}
+$$ donde A y B son nuestras variables aleatorias y $P(B) \neq 0$:
+
+-   P(A\|B) es la probabilidad condicional del evento A, sabiendo que ha ocurrido B
+
+-   P(B\|A) es la probabilidad condicional del evento B,sabiendo que ha ocurrido A
+
+-   P(A) y P(B) es la probabilidad de observar A y B de forma independiente. Es conocido como la probabilidad **marginal**.
+
+-   P(B,A) o P(B $\cap$ A): es la probabilidad de que ambos eventos A y B ocurran a la vez.
+
+-   Si son sucesos independientes P(B,A)=P(B)·P(A)
+
+-   Si son sucesos dependientes P(B,A)= P(B\|A)·P(A)
+
+![](./pics/bayes1.jpg)
+
+En la imagen anterior podemos ver dentro del cuadrado verde disparos rojos y blancos sobre un barco. En total hay 35 disparos, 20 rojos y 15 blancos.
+
+La probabilidad de elegir un disparo rojo al azar es: $$
+\begin{split}
+P(rojo)&=\frac{20}{35}=\frac{4}{7} \approx  0.571 \\
+P(blanco)&=\frac{15}{35}=\frac{3}{7} \approx  0.428
+\end{split}
+$$
+
+La probabilidad de, en ese cuadrado, acertar al barco es: $$
+P(barco)=\frac{4}{35} \approx  0.114
+$$
+
+Si sabemos que se ha realizado un disparo **blanco**, ¿cuál es la probabilidad de que haya dado al **barco**? $$
+P(barco|blanco)=\frac{3}{15} = 0.3
+$$
+
+Si sabemos que se ha realizado un disparo **rojo**, ¿cuál es la probabilidad de que haya dado al **barco**? $$
+P(barco\|rojo)=\frac{1}{20} = 0.05 $$
+
+#### Apliquemos Bayes
+
+El **barco** ha sido alcanzado por un disparo ¿Cuál es la probabilidad de que ese disparo sea **rojo**?
+
+Nos están preguntando por $P(rojo|barco)$. Conocemos P(barco\|rojo), P(barco) y P(rojo), así que por el teorema de Bayes:
+
+$$
+P(rojo|barco)=\frac{P(barco|rojo)·P(rojo)}{P(barco)} =\frac{0.05 ·\frac{20}{35} }{\frac{4}{35}}=\frac{1}{4}=0.25
+$$
+
+El **barco** ha sido alcanzado por un disparo ¿Cuál es la probabilidad de que ese disparo sea **blanco**?
+
+Nos están preguntando por $P(blanco|barco)$. Conocemos P(barco\|blanco), P(barco) y P(blanco), así que por el teorema de Bayes:
+
+$$
+P(blanco|barco)=\frac{P(barco|blanco)·P(blanco)}{P(barco)} =\frac{\frac{3}{15} ·\frac{15}{35} }{\frac{4}{35}}=\frac{3}{4}=0.75
+$$
+
+#### Probabilidad conjunta
+
+¿Cual es la probabilidad de que un disparo de al **barco** y además sea **rojo**?
+
+$$
+\begin{split}
+P(barco,rojo)&=P(barco|rojo)·P(rojo)=\frac{1}{20}·\frac{20}{35}=\frac{1}{35} \\
+P(barco,rojo)&=P(rojo|barco)·P(barco)=\frac{1}{4}·\frac{4}{35}=\frac{1}{35}
+\end{split}
+$$
+
+## Arboles bayesianos
+
+Estamos en el año 2025, un terrible virus ha escapado de un laboratorio de máxima seguridad y está infectando a gente alrededor de todo el mundo convirtiendolos en zombies admiradores de [Nyan Cat](https://www.youtube.com/watch?v=QH2-TGUlwu4) aunque luego en apariencia llevan una vida normal. Se calcula que en este momento un **5% de la población** mundial está infectada.
+
+Afortunadamente existe un test al que se puede someter a un individuo para ver si está infectado o no. Pero el test no es 100% fiable, nunca se tiene tanta seguridad. Si la persona está infectada el test acertará un 99% de las veces, en cambio si no está infectada el test acertará un 98% de las veces. Esto genera la siguiente **matriz de confusión**:
+
+| .          | Infectado | Sano |
+|------------|-----------|------|
+| **Test=1** | 99%       | 2%   |
+| **Test=0** | 1%        | 98%  |
+
+Si elegimos una persona al azar y nuestro test dice que está infectado, ¿que posibilidades hay de que realmente esté infectado? Queremos saber P(Zombie=1\|Test=1)
+
+Utilizando Bayes: $$
+P(Zombie=1|Test=1)=\frac{P(Test=1|Zombie=1)·P(Zombie=1)}{P(Test=1)}
+$$ Pero desconocemos $P(Test=1)$, aunque podemos obtenerlo mediante: $$
+\begin{split}
+P(Test=1)&=P(Test=1|Zombie=1)·P(Zombie=1)+P(Test=1|Zombie=0)·P(Zombie=0) \\
+P(Test=1)&=P(Test=1,Zombie=1)+P(Test=1,Zombie=0)
+\end{split}
+$$ Es decir: $$
+\begin{split}
+P(Z=1|T=1)=\frac{P(T=1|Z=1)·P(Z=1)}{P(T=1|Z=1)·P(Z=1)+P(T=1|Z=0)·P(Z=0)} \\
+P(Z=1|T=1)=\frac{0.99·0.05}{0.99·0.05+0.02·0.95}=0.7226 \\
+\end{split}
+$$
+
+Esta misma información se puede representar con un grafo acíclico:
+
+![](pics/bayestree1.png)
+
+## Análisis Causal y análisis contrafactual
+
+El análisis causal nos permite ver la relación causa efecto que hay entre diferentes variables.
+
+Veamos un ejemplo sacado del libro "The book of why". Imaginemos que la vacuna de la viruela que se aplica al 99% de la población.
+
+De los vacunados, un 1% desarrolla una reacción y de ese grupo un 1% fallece. Pero ninguno coge viruela.
+
+De los no vacunados, un 2% coge la enfermedad, y de esos enfermos un 20% fallece.
+
+El diagrama causal sería el siguiente:
+
+![](pics/causal_viruela.jpg)
+
+Si pintamos cada una de esas probabilidades. La probabilidad de sufrir una reacción (R) o la enfermedad (E) en función de la vacuna (V): $$
+P(R|V)=0.01 \\
+P(R|\neg V)=0 \\
+P(E|V)=0 \\
+P(E|\neg V)=0.02
+$$
+
+Las probabilidades de fallecimiento (M) en función de la reacción (R) o la enfermedad (E) son: $$
+P(M|R)=0.01 \\
+P(M|E)=0.2
+$$
+
+Si partimos de una población de 1 millón de personas, habrá 990.000 vacunados y 10.000 sin vacunar. De todos los vacunados fallecerán 99 personas. De los no vacunados fallecerán 40 personas.
+
+**En esta población muere más gente por las vacunas que por la enfermedad**.
+
+El análisis contrafactual trata de responder a la pregunta, si no se hubiera aplicado la vacuna. ¿Cuanta gente habría fallecido?
+
+La probabilidad de fallecer si te pones la vacuna es:
+
+$$
+P(M|V) = P(M|R)·P(R|V) = 0.01·0.01 = 10^{-4}
+$$
+
+La probabilidad de fallecer si NO te pones la vacuna es: $$
+P(M|\neg V) = P(M|E)·P(E|\neg V) = 0.02·0.2 = 0.004
+$$
+
+Si el millón de personas no se hubiera vacunado número de fallecidos sería de $10^6·0.004 = 4000$ personas.
+
+La vacuna ha salvado la vida de $4000-99-40=3861$ personas.
+
+## El problema de Monty Hall
+
+Este problema recibe su nombre tras el programa de televisión "Let's Make a Deal" presentado por Monty Hall en la década de 1970. El enunciado más famoso del problema, extraído de Parade Magazine en 1990:
+
+*Supón que estás en un concurso, y se te ofrece escoger entre tres puertas: detrás de una de ellas hay un coche, y detrás de las otras, cabras. Escoges una puerta, digamos la nº1, y el presentador, que sabe lo que hay detrás de las puertas, abre otra, digamos la nº3, que contiene una cabra. Entonces te pregunta: "¿No prefieres escoger la nº2?". ¿Es mejor para ti cambiar tu elección?*
+
+![](pics/montyhall.png)
+
+Tenemos tres hipótesis: \* $H_1$: El coche está tras la puerta 1 \* $H_2$: El coche está tras la puerta 2 \* $H_3$: El coche está tras la puerta 3
+
+Evidentemente, como no tenemos ningún tipo de información adicional: $$
+P(H_1)=P(H_2)=P(H_3)=\frac{1}{3}
+$$
+
+Nuestra evidencia vendrá de Monty abriendo una puerta, evidentemente sabemos que: \* Monty siempre abrirá una puerta de las 2 que no hayamos seleccionado. \* Monty nunca abrirá la puerta que tenga el coche.
+
+Nosotros estamos interesados en la probabilidad que el coche esté detrás de una puerta utilizando nuestro conocimiento.
+
+Imaginemos que el **concursante selecciona la puerta 1**, a continuación **Monty selecciona la puerta 3**. Las siguientes **probabilidades condicionales** ocurren: \* Condición, el coche está tras la puerta 1: Puede abrir igualmente la puerta 2 o 3 $$
+P(M_3|H_1)=\frac{1}{2}=P(M_2|H_1)
+$$ \* Condición, el coche está tras la puerta 2: Puede abrir solo la puerta 3: $$
+P(M_3|H_2)=1
+$$ \* Condición, el coche está tras la puerta 3: No podría abrir esa puerta: $$
+P(M_3|H_3)=0
+$$
+
+Desde nuestro punto de vista, la probabilidad marginal de que Monty elija la puerta 2 o 3 es la misma, porque no sabemos donde está el coche. Solo sabemos que nunca eligirá la puerta 1 porque es la que seleccionó el concursante: $$
+P(M_2)=P(M_3)=\frac{1}{2}
+$$
+
+Ahora hay dos opciones, cambiar a la puerta 2 o mantenerse en la puerta 1. \* Se mantiene en puerta 1, sabiendo que la puerta 3 no tiene premio: $$
+P(H_1|M_3)=\frac{P(M_3|H_1)·P(H_1)}{P(M_3)}=\frac{\frac{1}{2}·\frac{1}{3}}{\frac{1}{2}}=\frac{1}{3}
+$$ \* Se cambia a la puerta 2, sabiendo que la puerta 3 no tiene premio: $$
+P(H_2|M_3)=\frac{P(M_3|H_2)·P(H_2)}{P(M_3)}=\frac{1·\frac{1}{3}}{\frac{1}{2}}=\frac{2}{3}
+$$
+
+Así pues se ve que la probabilidad de cambiar de puerta es 2/3, mientras que la probabilidad de mantenerse con la original es 1/3.
+
+```{r}
+N<-10000
+puerta_con_premio<-floor(runif(N,min=1,max=4))
+
+seleccion_inicial_del_concursante<-floor(runif(N,min=1,max=4))
+seleccion_cambiada_del_concursante<-rep(NA,N)
+
+for (i in 1:N){
+    
+    # Monty selecciona una puerta
+    if (puerta_con_premio[i]==1){
+        if (puerta_con_premio[i]==seleccion_inicial_del_concursante[i]){
+            seleccion_monty<-ifelse(runif(1)>0.5,2,3)
+        }else{
+            seleccion_monty<-ifelse(seleccion_inicial_del_concursante[i]==3,2,3)
+        }
+    }else if (puerta_con_premio[i]==2){
+        if (puerta_con_premio[i]==seleccion_inicial_del_concursante[i]){
+            seleccion_monty<-ifelse(runif(1)>0.5,1,3)
+        }else{
+            seleccion_monty<-ifelse(seleccion_inicial_del_concursante[i]==3,1,3)
+        }        
+    }else if (puerta_con_premio[i]==3){
+        if (puerta_con_premio[i]==seleccion_inicial_del_concursante[i]){
+            seleccion_monty<-ifelse(runif(1)>0.5,1,2)
+        }else{
+            seleccion_monty<-ifelse(seleccion_inicial_del_concursante[i]==1,2,1)
+        }
+    }
+    
+    # El concursante selecciona otra puerta
+    puertas_prohibidas<-c(seleccion_monty,seleccion_inicial_del_concursante[i])
+    seleccion_cambiada_del_concursante[i]<-which(is.na(match(1:3,puertas_prohibidas)))    
+}
+
+p1<-mean(seleccion_inicial_del_concursante==puerta_con_premio)
+print(paste0("Si el concursante nunca cambia de puerta la probabilidad de acertar es:",p1))
+p2<-mean(seleccion_cambiada_del_concursante==puerta_con_premio)
+print(paste0("Si el concursante siempre cambia de puerta la probabilidad de acertar es:",p2))
+```
+
+# Máxima verosimilitud (MLE)
+
+La Máxima verosimilitud (Maximum likelihood estimation) es un método para estimar los parámetros de un modelo estadístico dadas ciertas observaciones del modelo.
+
+### Ejemplo
+
+Imagínate que tienes una báscula poco precisa y la utilizas para medir el peso de un periquito adulto. Te salen 3 medidas: 50g, 42g, 47g.
+
+![](pics/pollo.jpg)
+
+¿Cual es la media? Si suponemos que la media son 40g y la desviación típica 10g tendríamos la siguiente gráfica, ¿cual sería la probabilidad de obtener esas medidas?
+
+```{r}
+library(ggplot2)
+weights<-c(50,42,47)
+
+options(repr.plot.height=4,repr.plot.width=6)
+xdf<-data.frame(z=c(0,70))
+ggplot(xdf,aes(x=z))+stat_function(fun=dnorm,args = list(mean = 40, sd =10))+
+  geom_vline(xintercept = weights[1],color="blue")+
+  geom_vline(xintercept = weights[2],color="blue")+
+  geom_vline(xintercept = weights[3],color="blue")+
+  ylab("probabilidad")+xlab("Peso [g]")+
+  theme_linedraw()
+```
+
+La probabilidad a posteriori condicionada a una gaussiana de media $\mu=40$ y desviación típida $\sigma=10$ se calcula como: $$
+\begin{split}
+    P(X \mid \theta) &= P(X \mid \mu,\sigma)  = \prod_{i=1}^N P(x_i \mid \mu,\sigma) \\ 
+    P(X \mid \mu,\sigma) &= \prod_{i=1}^N \frac {1}{\sqrt {2\pi \sigma ^{2}}}\;e^{-{\frac {(x_i-\mu )^{2}}{2\sigma ^{2}}}}
+\end{split}
+$$
+
+```{r}
+mnkg=40
+sdkg=10
+prob<-dnorm(weights[1],mean=mnkg,sd=sdkg)*
+      dnorm(weights[2],mean=mnkg,sd=sdkg)*
+      dnorm(weights[3],mean=mnkg,sd=sdkg)
+paste0("La probabilidad es: P(X|",mnkg,",",sdkg,")=",round(prob,10))
+```
+
+¿Qué ocurriría si tuvieramos una gaussiana de media 36? ¿cual sería la probabilidad?
+
+```{r}
+mnkg=36
+sdkg=10
+prob<-dnorm(weights[1],mean=mnkg,sd=sdkg)*
+      dnorm(weights[2],mean=mnkg,sd=sdkg)*
+      dnorm(weights[3],mean=mnkg,sd=sdkg)
+paste0("La probabilidad es: P(X|",mnkg,",",sdkg,")=",round(prob,10))
+```
+
+¿Cual es el valor óptimo de $\theta=\{\mu,\sigma\}$ que maximiza la probabilidad?
+
+La probabilidad para el vector $X$ de $n$ observaciones viene dada por: $$
+\mathcal {L}(\theta)=P(X_1=x_1,X_2=x_2,\ldots,X_n=x_n)=f(x_1;\theta)\cdot f(x_2;\theta)\cdots f(x_n;\theta)=\prod\limits_{i=1}^n f(x_i;\theta)
+$$
+
+Es el estimador de máxima verosimilitud, que se calcula como: $$
+\hat {\theta }\in \{{\underset {\theta \in \Theta }{\operatorname {arg\,max} }}\ {\mathcal {L}}(\theta \,;x)\}
+$$
+
+Maximizar $\mathcal {L}$ equivale a maximizar su logaritmo. Muchas veces es mejor trabajar con logaritmos, sobretodo con funciones de probabilidad basadas en exponenciales: $$
+{\displaystyle \ell (\theta \,;x)=\ln {\mathcal {L}}(\theta \,;x),}
+$$
+
+Su máximo se puede obtener derivando respecto a $\theta$ e igualando a cero:
+
+$$
+ \frac {\partial }{\partial \theta }\ln {\Big (}{\mathcal {L}}(\theta ){\Big )}=0
+$$
+
+#### Ejemplo MLE de gaussiana:
+
+La función de distribución es: $$
+f(x\mid \mu ,\sigma )={\frac {1}{{\sqrt {2\pi \sigma ^{2}}}\ }}\exp {\left(-{\frac {(x-\mu )^{2}}{2\sigma ^{2}}}\right)},
+$$
+
+La probabilidad de de tener una muestra de $n$ muestras independientes identicamente distribuidas de forma aleatoria es: $$
+\mathcal {L}(\theta)=\mathcal {L}(\mu ,\sigma ) =f(x_{1},\ldots ,x_{n}\mid \mu ,\sigma ^{2})=\prod _{i=1}^{n}f(x_{i}\mid \mu ,\sigma ^{2})=\left({\frac {1}{2\pi \sigma ^{2}}}\right)^{n/2}\exp \left(-{\frac {\sum _{i=1}^{n}(x_{i}-\mu )^{2}}{2\sigma ^{2}}}\right),
+$$
+
+Para simplificar pasamos a logaritmos: $$
+\ln {\Big (}{\mathcal {L}}(\mu ,\sigma ){\Big )}=-{\frac {\,n\,}{2}}\ln(2\pi \sigma ^{2})-{\frac {1}{2\sigma ^{2}}}\sum _{i=1}^{n}(\,x_{i}-\mu \,)^{2}
+$$
+
+Calculamos el estimador de máxima verosimilitud para la media: $$
+{\begin{aligned}0&={\frac {\partial }{\partial \mu }}\log {\Big (}{\mathcal {L}}(\mu ,\sigma ){\Big )}=0-{\frac {\;-2\!n({\bar {x}}-\mu )\;}{2\sigma ^{2}}}.\end{aligned}}
+$$ El resultado es: $$
+{\hat {\mu }}={\bar {x}}=\sum _{i=1}^{n}{\frac {\,x_{i}\,}{n}}
+$$ Si repetimos el proceso para la desviación típica obtendríamos: $$
+\widehat {\sigma }^{2}={\frac {1}{n}}\sum _{i=1}^{n}(x_{i}-\mu )^{2}
+$$ **AVISO**: El MLE no nos devuelve el estimador sesgado de la varianza porque $\mu \neq \hat {\mu }$. Si en la equación de $\widehat {\sigma }^{2}$ metemos la de $\hat {\mu }$. Obtenemos: $$
+\operatorname {E} {\big [}\;{\widehat {\sigma }}^{2}\;{\big ]}={\frac {\,n-1\,}{n}}\sigma ^{2}.
+$$
+
+```{r}
+weights
+```
+
+```{r}
+sapply(weights,function(xi) dnorm(xi,mean=mnkg,sd=sdkg))
+```
+
+```{r}
+#mnkg=36
+#sdkg=10
+
+l<-function(theta){
+    mnkg=theta[1]
+    sdkg=theta[2]
+    -prod(sapply(weights,function(xi) dnorm(xi,mean=mnkg,sd=sdkg)))
+}
+                
+o<-optim(c(50,10), l)
+                
+paste("La media óptima calculada mediante MLE es:",o$par[1])
+paste("La media estimada es:",mean(weights))
+                 
+paste("La desviación típica óptima calculada mediante MLE es:",o$par[2])
+paste("La desviación típica estimada es:",sd(weights))                 
+o                 
+```
+
+#### Ejemplo MLE de bernoulli:
+
+La formula de la distribución de probabilidad de una Bernuilli es: $$
+f(k;p)=p^k(1-p)^{1-k}
+$$
+
+La probabilidad de de tener una muestra de $n$ muestras independientes identicamente distribuidas de forma aleatoria es: $$
+\mathcal {L}(\theta)=\mathcal {L}(p ) =f(x_{1},\ldots ,x_{n}\mid \mu ,\sigma ^{2})=\prod _{i=1}^{n}f(x_{i}\mid \mu ,\sigma ^{2})=p^{\sum x_i} (1-p)^{n-\sum x_i}
+$$
+
+Para simplificar pasamos a logaritmos: $$
+\ln {\Big (}{\mathcal {L}}(p ){\Big )}=\Big(\sum x_i\Big)\ln(p)+\Big(n-\sum x_i\Big)\ln(1-p)
+$$
+
+Calculamos el estimador de máxima verosimilitud para calcular $p$: $$
+0={\frac {\partial }{\partial p }}\log {\Big (}{\mathcal {L}}(p ){\Big )}=\frac{\Big(\sum x_i\Big)}{p}+\frac{\Big(n-\sum x_i\Big)}{(1-p)}
+$$ El resultado es: $$
+{\hat {p }}=\sum _{i=1}^{n}{\frac {\,x_{i}\,}{n}}
+$$
+
+```{r}
+X<-rbinom(50,size=1,p=0.3)
+
+l<-function(p){
+    -prod(sapply(X,function(xi) p^xi*(1-p)^(1-xi)))
+}
+                
+o<-optimize(l,c(0,1))
+                
+paste("La media óptima calculada mediante MLE es:",o$minimum)
+paste("La media estimada es:",mean(X))
+                 
+o
+```
+
+# Maximum a Posteriori (MAP) e inferencia Bayesiana
+
+Imaginemos que tenemos información adicional, como por ejemplo la siguiente tabla de la [Wikipedia](https://en.wikipedia.org/wiki/Budgerigar):
+
+```         
+Wild budgerigars average 18 cm (7 in) long, weigh 30–40 grams (1.1–1.4 oz), 30 cm (12 in) in wingspan, and display a light green body colour (abdomen and rumps), while their mantles (back and wing coverts) display pitch-black mantle markings (blackish in fledgelings and immatures) edged in clear yellow undulations. 
+```
+
+Ahí vemos que el peso medio de los periquitos adultos es de unos 35g.
+
+¿Cómo podemos saber la varianza?
+
+Suponemos que el margen de 30-40 gramos corresponde con el intervalo de confianza del 80%.
+
+```{r}
+calc_sd<-function(x,p,weight){    
+    (qnorm(p,mean=35,sd=x)-weight)^2
+}
+o<-optimize(calc_sd,c(0,10),p=0.9,weight=40)
+paste("La desviación típica calculada con el percentil 90 es:",o$minimum)
+
+o<-optimize(calc_sd,c(0,10),p=0.1,weight=30)
+paste("La desviación típica calculada con el percentil 10 es:",o$minimum)
+```
+
+```{r}
+library(ggplot2)
+
+sd_est <- 3.901
+
+loth<-qnorm(0.1,lower.tail = T, mean=35, sd=sd_est)
+upth<-qnorm(0.1,lower.tail = F, mean=35, sd=sd_est)
+
+paste("El margen que nos interesa está en el rango: [",
+      round(loth,2),",",round(upth,2),"]")
+
+
+qsd009<-function(x){    
+    out<-dnorm(x, mean=35, sd=sd_est)    
+    out[x<loth  | x>upth  ]<-NA
+    out
+}
+
+options(repr.plot.height=4,repr.plot.width=6)
+xdf<-data.frame(z=c(20,50))
+ggplot(xdf,aes(x=z))+stat_function(fun=dnorm, args=list("mean"=35,"sd"=sd_est))+
+  stat_function(fun=qsd009, geom="area",fill="red", alpha=0.5)+
+  geom_text(x=44,y=0.047,size=4,label=paste0("n_cdf(",round(upth,2),")=0.9"))+
+  geom_text(x=26,y=0.047,size=4,label=paste0("n_cdf(",round(loth,2),")=0.1"))+
+  theme_linedraw()
+options(repr.plot.height=7,repr.plot.width=7)
+```
+
+Para redondear, supongamos que el conocimiento que tenemos a priori es que los periquitos tienen un peso medio de 35g con una desviación típica de casi 4g.
+
+Acorde con Bayes, si tenemos información previa (el prior) podemos calcular la probabilidad a posteriori como: $$
+P(\theta|X)=\frac{P(X|\theta)·P_{apriori}(\theta)}{P(X)}
+$$
+
+Donde $X$ son los datos que tenemos y $\theta$ son los parámetros que estimamos.
+
+Dados los pesos que hemos medido, ¿cual es la probabilidad de que sigan una gaussiana de media 35 y desviación 4?
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+xdf<-data.frame(z=c(20,60))
+ggplot(xdf,aes(x=z))+stat_function(fun=dnorm,args = list(mean = 35, sd =4))+
+  geom_vline(xintercept = weights[1],color="blue")+
+  geom_vline(xintercept = weights[2],color="blue")+
+  geom_vline(xintercept = weights[3],color="blue")+
+  stat_function(fun=dnorm,args = list(mean = mean(weights), sd =sd(weights)),color='gray')+
+  ylab("probabilidad")+xlab("Peso [kg]")+
+  theme_linedraw()
+```
+
+```{r}
+for (w in weights){
+    print(paste("La densidad de probabilidad de que pese",w,"es",dnorm(w,mean=35,sd=4)))
+}
+```
+
+Como vemos, la probabilidad de haber realizado una medida de 6kg es bastante baja. Es posible que se trate de un outlayer, un valor atípico, producto de un error en la medida.
+
+Si seguimos adelante con el teorema de Bayes, lo que nos interesa es obtener el máximo a posteriori, maximizar $P(\theta|X)$
+
+$$
+\hat {\theta }\in \{{\underset {\theta \in \Theta }{\operatorname {arg\,max} }} P(\theta|X)\} =\hat {\theta }\in \{{\underset {\theta \in \Theta }{\operatorname {arg\,max} }} \frac{P(X|\theta)·P_{apriori}(\theta)}{P(X)}\}
+$$
+
+Lo cual equivale a: $$
+\hat {\theta }\in \{{\underset {\theta \in \Theta }{\operatorname {arg\,max} }} P(\theta|X) \}=\{ {\operatorname {arg\,max} }P(X|\theta)·P_{apriori}(\theta)\}
+$$
+
+Suponemos que la desviación típica es la misma que la que hemos medido, pero desconocemos la media, el valor más probable del peso. Lo que se denomina el Máximo a Posteriori (MAP):
+
+```{r}
+newl<-function(theta){
+    mnkg=theta[1]    
+    mnkg_apriori=35
+    sdkg_apriori=4
+    -prod(sapply(weights,function(xi) (dnorm(xi,mean=mnkg,sd=sd(weights)))))*
+                                       dnorm(mnkg,mean=mnkg_apriori,sd=sdkg_apriori)
+}                
+                 
+o<-optim(c(35), newl, method ="Brent",lower = 10, upper = 60,)
+
+paste("La media óptima calculada mediante MAP es:",o$par)
+paste("La media estimada es:",mean(weights))                 
+```
+
+```{r}
+options(repr.plot.height=4,repr.plot.width=6)
+xdf<-data.frame(z=c(20,60))
+ggplot(xdf,aes(x=z))+stat_function(fun=dnorm,args = list(mean = 35, sd =4))+
+  geom_vline(xintercept = weights[1],color="blue")+
+  geom_vline(xintercept = weights[2],color="blue")+
+  geom_vline(xintercept = weights[3],color="blue")+
+  stat_function(fun=dnorm,args = list(mean = mean(weights), sd =sd(weights)),color='gray')+
+  stat_function(fun=dnorm,args = list(mean = o$par, sd =sd(weights)),color='red')+
+  geom_vline(xintercept = o$par,color="red")+
+  ylab("probabilidad")+xlab("Peso [kg]")+
+  theme_linedraw()
+```
+
+```{r}
+max_weight<-40
+prb<-pnorm(max_weight,mean = o$par, sd =sd(weights),lower.tail=FALSE)
+paste("La probabilidad de que pese más de ",max_weight,'g es del ',round(prb*100),'%',sep='')
+```
+
+![Alt Text](https://media.giphy.com/media/ceHKRKMR6Ojao/giphy.gif)
+
+#### Bayesianos vs Frecuentistas
+
+De obligada referencia: https://xkcd.com/1132/
+
+El MLE es igual al MAP cuando el prior es completamente desconocido, es decir, cuando es una uniforme.
+
+Características de aproximación Bayesiana:
+
+-   La mayor parte de las veces sabemos como debería ser nuestra distribución.
+
+-   Elegir mal el Prior puede tener consecuencias catastróficas.
+
+-   Podemos obtener mejores resultados con menos muestras.
+
+Características de aproximación Frecuentista:
+
+-   No necesitamos hacer ninguna suposición de los datos con lo que podemos evitar sesgos basados en prejuicios.
+
+# Test A/B con Bayes
+
+Recordemos el teorema de Bayes $$
+P(\theta|X)=\frac{P(X|\theta)·P_{apriori}(\theta)}{P(X)}
+$$
+
+Donde $X$ son los datos que tenemos y $\theta$ son los parámetros que estimamos.
+
+En el caso de test A/B donde tratamos de ver la tasa de conversión (conversion rate) de dos grupos uno A y otro B. Como estamos mirando si hay o no conversión esto se traduce en una distribución de Bernoulli. La distribución que tenemos es: $$
+P(X|\theta)=\theta^{X=1}·(1-\theta)^{1-X=1}
+$$ Donde $\theta$ es el ratio de usuarios que se han convertido (que han comprado un producto) vs el total de usuarios: $\theta=\frac{n_s}{n_t}$.
+
+Al tener una función de distribución $P(X|\theta)$, el prior, $P_{apriori}(\theta)$ ha de ser una función Beta, para que $P(\theta|X)$ también sea una función Beta y se cumple la siguiente propiedad: $$
+Beta(\alpha,\beta) · Bernoulli \left(\theta=\frac{a}{a+b}\right) = Beta(\alpha + a,\beta+b)
+$$
+
+Recordemos que en una función Beta los estimadoes son:
+
+Estimadores **media** ($\mu$) y **varianza** ($\sigma^2$): $$
+\mu= \frac{\alpha}{\alpha + \beta} \qquad
+\sigma^2= \frac{\alpha \beta}{(\alpha+\beta)^2(\alpha+\beta+1)}
+$$ La moda sería: $$
+moda = \frac{\alpha-1}{\alpha + \beta -2}
+$$
+
+Datos sacados de: https://www.gamasutra.com/blogs/ViktorGregor/20181105/328404/Its_time_to_rethink_AB_testing.php#comments
+
+## Ejemplo
+
+```{r}
+na_t <- 1000
+na_s <- 197
+nb_t <- 1000
+nb_s <- 230
+m <- matrix(c(na_s,na_t,nb_s,nb_t), byrow = T,nrow = 2,
+            dimnames=list(c("control","nuevo"),c("exitos","intentos")))
+m
+```
+
+## Versión frecuentista
+
+Porcentaje de la media de conversión de cada grupo:
+
+```{r}
+pa_margin <- round(binom.test(na_s,na_t)$conf.int,3)
+pb_margin <- round(binom.test(nb_s,nb_t)$conf.int,3)
+
+matrix(c(pa_margin,pb_margin)*100,nrow=2,dimnames=list(c("control","nuevo"),c("5%","95%")), byrow = T)
+```
+
+Margen de confianza del del 95%:
+
+```{r}
+chisq.test(m)
+```
+
+```{r}
+fisher.test(m)
+```
+
+## Versión Bayesiana
+
+```{r}
+prior_a <- 2
+prior_b <- 8
+
+x <- seq(0,1,by=0.01)
+p <- dbeta(x,prior_a,prior_b)
+plot(x, p,t="l")
+```
+
+```{r}
+#La media sería
+sum(x*p)*(x[2]-x[1])
+```
+
+```{r}
+library(ggplot2)
+x <- seq(0,0.3, by = 0.001)
+
+p1 <- dbeta(x,prior_a+na_s,prior_b+(na_t-na_s))
+p2 <- dbeta(x,prior_b+nb_s,prior_b+(nb_t-nb_s))
+
+df<-data.frame(x=x*100,prob=c(p1,p2),name=c(rep("control",length(x)),rep("nuevo",length(x))))
+ggplot(data=df,aes(x=x,y=prob,color=name))+geom_line()+xlim(16,30)
+```
+
+Porcentaje de la media de conversión de cada grupo:
+
+```{r}
+cr_a <- sum(x*p1)*(x[2]-x[1])
+cr_b <- sum(x*p2)*(x[2]-x[1])          
+matrix(c(cr_a,cr_b)*100,nrow=1,dimnames=list(c("conversión"),c("control","nuevo")))
+```
+
+Margen de confianza del del 95%:
+
+```{r}
+pa_margin <- qbeta(c(0.025,0.0975),prior_a+na_s,prior_b+(na_t-na_s))
+pb_margin <- qbeta(c(0.025,0.0975),prior_b+nb_s,prior_b+(nb_t-nb_s))
+
+matrix(c(pa_margin,pb_margin)*100,nrow=2,dimnames=list(c("control","nuevo"),c("5%","95%")) , byrow=T)
+```
+
+Vamos a simular por montercarlo la diferencia entre los dos grupos:
+
+```{r}
+N <- 1000000
+r1 <- rbeta(N,prior_a+na_s,prior_b+(na_t-na_s))
+r2 <- rbeta(N,prior_a+nb_s,prior_b+(nb_t-nb_s))
+diff_df<-data.frame(x=(r2-r1))
+ggplot(data=diff_df,aes(x*100))+geom_density(color="blue")+geom_vline(xintercept =0)
+```
+
+La probabilidad de que mejore la **nueva** web es de:
+
+```{r}
+round(sum(diff_df$x>0)/nrow(diff_df),3)*100
+```
+
+La mejora esperada si la *nueva* es realmente mejor
+
+```{r}
+mean(diff_df$x[diff_df$x>0])*100
+```
+
+La empeora esperada si la **nueva** es realmente peor es
+
+```{r}
+mean(diff_df$x[diff_df$x<=0])*100
+```
+
+## Bayes aplicado a StarWars
+
+https://www.countbayesie.com/blog/2015/2/18/hans-solo-and-bayesian-priors
