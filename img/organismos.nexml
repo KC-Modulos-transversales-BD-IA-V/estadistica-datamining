@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><nex:nexml xmlns:nex="http://www.nexml.org/2009" xmlns="http://www.nexml.org/2009" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" generator="org.nexml.model.impl.DocumentImpl" version="0.9" xmlns:default_node_format="" xmlns:format="">
+  <otus id="otus73"/>
+  <trees id="trees74" otus="otus73">
+    <tree about="#tree75" id="tree75" label="[1]Tree1" xmlns:collapsed="" xmlns:default_edge_format="" xmlns:drawer="" xmlns:embellished="" xmlns:radiallabels="" xmlns:root="" xmlns:sparselabels="" xmlns:toscale="" xmlns:trans="" xsi:type="nex:FloatTree">
+      <meta content="angle:1.5707964 scaleX:197.14285 scaleY:177.5 flipH:0 flipV:0 leftMargin:840 rightMargin:840 topMargin:455 bottomMargin:455;" datatype="xsd:string" id="meta143" property="trans" xsi:type="nex:LiteralMeta"/>
+      <meta content="" datatype="xsd:string" id="meta142" property="collapsed" xsi:type="nex:LiteralMeta"/>
+      <meta content="false" datatype="xsd:boolean" id="meta141" property="radiallabels" xsi:type="nex:LiteralMeta"/>
+      <meta content="true" datatype="xsd:boolean" id="meta140" property="sparselabels" xsi:type="nex:LiteralMeta"/>
+      <meta content="false" datatype="xsd:boolean" id="meta139" property="toscale" xsi:type="nex:LiteralMeta"/>
+      <meta content="RectangularCladogram" datatype="xsd:string" id="meta138" property="drawer" xsi:type="nex:LiteralMeta"/>
+      <meta content="true" datatype="xsd:boolean" id="meta137" property="embellished" xsi:type="nex:LiteralMeta"/>
+      <meta content="node78" datatype="xsd:string" id="meta136" property="root" xsi:type="nex:LiteralMeta"/>
+      <meta content=" fg=0 0 0 w=1 sh=1 dr=1 lc=0 0 0 lk=null ft='SansSerif-PLAIN-19' lx=0 ly=0 ll=11 lv=1;" datatype="xsd:string" id="meta77" property="default_edge_format" xsi:type="nex:LiteralMeta"/>
+      <meta content=" nh=2 nw=2 fg=0 0 0 bg=255 255 255 w=1 sh=0 fx=1 lc=0 0 0 lk=null ft='SansSerif-PLAIN-19' lx=0 ly=0 ll=1 lv=1;" datatype="xsd:string" id="meta76" property="default_node_format" xsi:type="nex:LiteralMeta"/>
+      <node about="#node78" id="node78">
+        <meta content=" x=-4.0 y=3.6875;" datatype="xsd:string" id="meta79" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node80" id="node80">
+        <meta content=" x=-2.0 y=1.75 ll=5;" datatype="xsd:string" id="meta81" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node82" id="node82" label="Abeto">
+        <meta content=" x=0.0 y=1.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta83" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node84" id="node84">
+        <meta content=" x=-1.0 y=2.5 ll=5;" datatype="xsd:string" id="meta85" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node86" id="node86" label="Petunia">
+        <meta content=" x=0.0 y=2.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta87" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node88" id="node88" label="Naranjo">
+        <meta content=" x=0.0 y=3.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta89" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node98" id="node98">
+        <meta content=" x=-3.0 y=5.625 ll=5;" datatype="xsd:string" id="meta99" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node100" id="node100">
+        <meta content=" x=-1.0 y=4.5 ll=5;" datatype="xsd:string" id="meta101" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node102" id="node102" label="Sepia">
+        <meta content=" x=0.0 y=4.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta103" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node104" id="node104" label="Calamar">
+        <meta content=" x=0.0 y=5.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta105" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node110" id="node110">
+        <meta content=" x=-2.0 y=6.75 ll=5;" datatype="xsd:string" id="meta111" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node112" id="node112" label="Ornitorrinco">
+        <meta content=" x=0.0 y=6.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta113" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node114" id="node114">
+        <meta content=" x=-1.0 y=7.5 ll=5;" datatype="xsd:string" id="meta115" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node116" id="node116" label="Vaca">
+        <meta content=" x=0.0 y=7.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta117" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <node about="#node118" id="node118" label="Perro">
+        <meta content=" x=0.0 y=8.0 ft='SansSerif-PLAIN-32' ll=5;" datatype="xsd:string" id="meta119" property="format" xsi:type="nex:LiteralMeta"/>
+      </node>
+      <edge about="#edge90" id="edge90" length="2.0" source="node84" target="node86">
+        <meta content=" ip= &lt; -1.0 2.0&gt; dr=1;" datatype="xsd:string" id="meta91" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge92" id="edge92" length="2.0" source="node84" target="node88">
+        <meta content=" ip= &lt; -1.0 3.0&gt; dr=1;" datatype="xsd:string" id="meta93" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge94" id="edge94" length="4.0" source="node80" target="node82">
+        <meta content=" ip= &lt; -2.0 1.0&gt; dr=1;" datatype="xsd:string" id="meta95" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge96" id="edge96" length="1.0" source="node80" target="node84">
+        <meta content=" ip= &lt; -2.0 2.5&gt; dr=1;" datatype="xsd:string" id="meta97" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge106" id="edge106" length="2.0" source="node100" target="node102">
+        <meta content=" ip= &lt; -1.0 4.0&gt; dr=1;" datatype="xsd:string" id="meta107" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge108" id="edge108" length="2.0" source="node100" target="node104">
+        <meta content=" ip= &lt; -1.0 5.0&gt; dr=1;" datatype="xsd:string" id="meta109" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge120" id="edge120" length="3.0" source="node114" target="node116">
+        <meta content=" ip= &lt; -1.0 7.0&gt; dr=1;" datatype="xsd:string" id="meta121" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge122" id="edge122" length="3.0" source="node114" target="node118">
+        <meta content=" ip= &lt; -1.0 8.0&gt; dr=1;" datatype="xsd:string" id="meta123" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge124" id="edge124" length="4.0" source="node110" target="node112">
+        <meta content=" ip= &lt; -2.0 6.0&gt; dr=1;" datatype="xsd:string" id="meta125" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge126" id="edge126" length="1.0" source="node110" target="node114">
+        <meta content=" ip= &lt; -2.0 7.5&gt; dr=1;" datatype="xsd:string" id="meta127" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge128" id="edge128" length="1.0" source="node98" target="node100">
+        <meta content=" ip= &lt; -3.0 4.5&gt; dr=1;" datatype="xsd:string" id="meta129" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge130" id="edge130" length="1.0" source="node98" target="node110">
+        <meta content=" ip= &lt; -3.0 6.75&gt; dr=1;" datatype="xsd:string" id="meta131" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge132" id="edge132" length="1.0" source="node78" target="node80">
+        <meta content=" ip= &lt; -4.0 1.75&gt; dr=1;" datatype="xsd:string" id="meta133" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+      <edge about="#edge134" id="edge134" length="1.0" source="node78" target="node98">
+        <meta content=" ip= &lt; -4.0 5.625&gt; dr=1;" datatype="xsd:string" id="meta135" property="format" xsi:type="nex:LiteralMeta"/>
+      </edge>
+    </tree>
+  </trees>
+</nex:nexml>
