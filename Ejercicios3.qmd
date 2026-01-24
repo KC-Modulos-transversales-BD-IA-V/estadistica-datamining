@@ -1,0 +1,70 @@
+---
+title: "Ejercicios_fin_semana"
+format: html
+editor: visual
+---
+
+## Ejemplo con asteroides
+
+Vamos a ver un ejemplo de clasificación usando un dataset de clasificación de asteroides descargado de: https://www.kaggle.com/shrutimehta/nasa-asteroids-classification
+
+Los datos son sobre asteroides - NeoWs. NeoWs (Near Earth Object Web Service) es un servicio web RESTful para información de asteroides cercanos a la Tierra. Con NeoWs, un usuario puede: buscar asteroides según su fecha de aproximación más cercana a la Tierra, buscar un asteroide específico con su identificación de cuerpo pequeño JPL de la NASA, así como explorar el conjunto de datos general.
+
+Licencia: Este dataset se distribuye bajo la licencia CCO 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+Leemos el dataset:
+
+```{r}
+library(dplyr, warn.conflicts = FALSE)
+df_asteroids <- read.csv('./data/nasa_asteroids.csv')
+str(df_asteroids)
+```
+
+La columna Hazardous nos dice si el asteroide es potencialmente peligroso o no.
+
+```{r}
+table(df_asteroids$Hazardous)
+```
+
+Vamos a ver cuantos asteroides duplicados hay:
+
+```{r}
+sum(duplicated(df_asteroids$Name))
+```
+
+```{r}
+df_asteroids |> arrange(desc(Close.Approach.Date)) |> distinct(Name, .keep_all=T) -> df_asteroids
+```
+
+Eliminamos columnas innecesarias
+
+```{r}
+df_asteroids$Neo.Reference.ID<-NULL
+df_asteroids$Name <- NULL
+df_asteroids$Equinox <- NULL
+df_asteroids$Orbiting.Body <- NULL
+df_asteroids$Orbit.ID <- NULL
+df_asteroids$Epoch.Date.Close.Approach <- NULL
+df_asteroids$Orbit.Determination.Date <- NULL
+df_asteroids$Close.Approach.Date <- NULL
+```
+
+Crearemos un modelo que mida la peligrosidad del modelo
+
+Vamos a dividir entre train y testing:
+
+```{r}
+
+```
+
+Vamosa mirar la correlación y nos quedamos con aquellas columnas que tengan una correlación inferior a 0.95
+
+```{r}
+
+```
+
+Vamos a calcular el modelo de regresión logística
+
+```{r}
+
+```
